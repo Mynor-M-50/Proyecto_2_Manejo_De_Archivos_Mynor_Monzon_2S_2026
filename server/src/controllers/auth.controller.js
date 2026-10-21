@@ -4,18 +4,8 @@ const env = require('../config/env');
 const User = require('../models/User');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const { serializeUser } = require('../utils/serializers');
 const { logActivity } = require('../services/activity.service');
-
-function serializeUser(user) {
-  return {
-    id: user._id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    active: user.active,
-    storageUsed: user.storageUsed,
-  };
-}
 
 // POST /api/auth/login
 const login = asyncHandler(async (req, res) => {
