@@ -22,4 +22,18 @@ function serializeFolder(folder) {
   };
 }
 
-module.exports = { serializeUser, serializeFolder };
+function serializeFile(file) {
+  return {
+    id: file._id,
+    ownerId: file.ownerId,
+    folderId: file.folderId || null,
+    name: file.name,
+    ext: file.ext,
+    mimeType: file.mimeType,
+    size: file.size,
+    createdAt: file.createdAt,
+    updatedAt: file.updatedAt,
+  };
+}
+
+module.exports = { serializeUser, serializeFolder, serializeFile };
