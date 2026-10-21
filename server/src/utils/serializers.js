@@ -11,4 +11,15 @@ function serializeUser(user) {
   };
 }
 
-module.exports = { serializeUser };
+function serializeFolder(folder) {
+  return {
+    id: folder._id,
+    ownerId: folder.ownerId,
+    parentId: folder.parentId || null,
+    name: folder.name,
+    createdAt: folder.createdAt,
+    updatedAt: folder.updatedAt,
+  };
+}
+
+module.exports = { serializeUser, serializeFolder };
