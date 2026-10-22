@@ -9,6 +9,7 @@ const {
   renameFile,
   moveFile,
 } = require('../controllers/files.controller');
+const { trashFile } = require('../controllers/trash.controller');
 const { authenticate } = require('../middlewares/auth');
 const { upload } = require('../utils/upload');
 
@@ -24,5 +25,6 @@ router.get('/:id/download', downloadFile);
 router.put('/:id/content', updateContent);
 router.patch('/:id/rename', renameFile);
 router.patch('/:id/move', moveFile);
+router.delete('/:id', trashFile);
 
 module.exports = router;

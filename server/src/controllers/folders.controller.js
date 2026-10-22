@@ -4,7 +4,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const { cleanName } = require('../utils/validators');
 const { serializeFolder } = require('../utils/serializers');
 const { getFolderWithAccess } = require('../services/access.service');
-const { assertNameAvailable } = require('../services/folder.service');
+const { assertNameAvailable, rebaseDescendants } = require('../services/folder.service');
 const { logActivity } = require('../services/activity.service');
 
 function logFolderAction(req, action, folder, details) {
@@ -133,20 +133,7 @@ const moveFolder = asyncHandler(async (req, res) => {
   const newAncestors = newParent ? [...newParent.ancestors, newParent._id] : [];
 
   // Todas las subcarpetas (tambien las de la papelera) cambian la parte inicial de su ruta
-  const descendants = await Folder.find({ ancestors: folder._id }).select('ancestors');
-  const operations = descendants.map((d) => {
-    const index = d.ancestors.findIndex((a) => String(a) === String(folder._id));
-    const tail = d.ancestors.slice(index); // desde la carpeta movida hacia abajo
-    return {
-      updateOne: {
-        filter: { _id: d._id },
-        update: { $set: { ancestors: [...newAncestors, ...tail] } },
-      },
-    };
-  });
-  if (operations.length > 0) {
-    await Folder.bulkWrite(operations);
-  }
+  await rebaseDescendants(folder._id, newAncestors);
 
   folder.parentId = newParent ? newParent._id : null;
   folder.ancestors = newAncestors;

@@ -3,6 +3,7 @@ const authRoutes = require('./auth.routes');
 const usersRoutes = require('./users.routes');
 const foldersRoutes = require('./folders.routes');
 const filesRoutes = require('./files.routes');
+const trashRoutes = require('./trash.routes');
 
 const router = express.Router();
 
@@ -14,5 +15,6 @@ router.use('/auth', authRoutes);
 router.use('/users', usersRoutes);
 router.use('/folders', foldersRoutes);
 router.use('/files', filesRoutes);
+router.use('/trash', trashRoutes);
 
 module.exports = router;

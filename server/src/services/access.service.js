@@ -55,4 +55,27 @@ async function getFileWithAccess(fileId, userId, needed = 'read') {
   return { file, level };
 }
 
-module.exports = { getFolderWithAccess, getFileWithAccess };
+// Papelera: solo el propietario puede ver, restaurar o eliminar definitivamente
+async function getTrashedFolder(folderId, userId) {
+  const folder = await Folder.findOne({ _id: folderId, deletedAt: { $ne: null } });
+  if (!folder) {
+    throw new AppError('La carpeta no esta en la papelera', 404);
+  }
+  if (String(folder.ownerId) !== String(userId)) {
+    throw new AppError('No tienes acceso a este recurso', 403);
+  }
+  return folder;
+}
+
+async function getTrashedFile(fileId, userId) {
+  const file = await File.findOne({ _id: fileId, deletedAt: { $ne: null } });
+  if (!file) {
+    throw new AppError('El archivo no esta en la papelera', 404);
+  }
+  if (String(file.ownerId) !== String(userId)) {
+    throw new AppError('No tienes acceso a este recurso', 403);
+  }
+  return file;
+}
+
+module.exports = { getFolderWithAccess, getFileWithAccess, getTrashedFolder, getTrashedFile };
