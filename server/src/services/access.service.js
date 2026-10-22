@@ -1,25 +1,69 @@
 const Folder = require('../models/Folder');
 const File = require('../models/File');
+const Share = require('../models/Share');
 const AppError = require('../utils/AppError');
 
-// Niveles de acceso de menor a mayor. 'owner' es el propietario del recurso
+// Niveles de acceso de menor a mayor. 'owner' es el propietario del recurso.
+// Los permisos compartidos (read, comment, edit) usan el mismo nombre que su nivel.
 const LEVELS = { read: 1, comment: 2, edit: 3, owner: 4 };
 
-// Nivel de acceso del usuario sobre una carpeta, o null si no tiene ninguno.
-// Por ahora solo existe el propietario; los permisos compartidos se suman
-// en el modulo de comparticion, sin cambiar a quien llama a estas funciones.
-async function getFolderLevel(folder, userId) {
-  if (String(folder.ownerId) === String(userId)) {
-    return 'owner';
-  }
-  return null;
+// El nivel mas alto de una lista de permisos
+function highest(permissions) {
+  return permissions.reduce((best, p) => (!best || LEVELS[p] > LEVELS[best] ? p : best), null);
 }
 
+// Nivel del usuario sobre una carpeta. Un permiso sobre una carpeta se hereda a todo su
+// contenido, por eso se buscan permisos sobre la carpeta y sobre todas sus carpetas padre.
+// rootId es la carpeta compartida mas alta de la ruta: desde ahi puede navegar el usuario.
+async function getFolderLevel(folder, userId) {
+  if (String(folder.ownerId) === String(userId)) {
+    return { level: 'owner', rootId: null };
+  }
+
+  const chain = [...folder.ancestors, folder._id]; // de la raiz hacia abajo
+  const shares = await Share.find({
+    sharedWithId: userId,
+    resourceType: 'folder',
+    resourceId: { $in: chain },
+  });
+  if (shares.length === 0) {
+    return { level: null, rootId: null };
+  }
+
+  const shared = new Set(shares.map((s) => String(s.resourceId)));
+  const rootId = chain.find((id) => shared.has(String(id)));
+  return { level: highest(shares.map((s) => s.permission)), rootId };
+}
+
+// Nivel del usuario sobre un archivo: permiso directo o heredado de alguna carpeta contenedora
 async function getFileLevel(file, userId) {
   if (String(file.ownerId) === String(userId)) {
-    return 'owner';
+    return { level: 'owner', rootId: null };
   }
-  return null;
+
+  const permissions = [];
+
+  const direct = await Share.find({
+    sharedWithId: userId,
+    resourceType: 'file',
+    resourceId: file._id,
+  });
+  direct.forEach((s) => permissions.push(s.permission));
+
+  if (file.folderId) {
+    const folder = await Folder.findOne({ _id: file.folderId });
+    if (folder) {
+      const chain = [...folder.ancestors, folder._id];
+      const inherited = await Share.find({
+        sharedWithId: userId,
+        resourceType: 'folder',
+        resourceId: { $in: chain },
+      });
+      inherited.forEach((s) => permissions.push(s.permission));
+    }
+  }
+
+  return { level: highest(permissions), rootId: null };
 }
 
 function checkLevel(level, needed) {
@@ -38,9 +82,9 @@ async function getFolderWithAccess(folderId, userId, needed = 'read') {
     throw new AppError('Carpeta no encontrada', 404);
   }
 
-  const level = await getFolderLevel(folder, userId);
+  const { level, rootId } = await getFolderLevel(folder, userId);
   checkLevel(level, needed);
-  return { folder, level };
+  return { folder, level, rootId };
 }
 
 // Igual que la anterior pero para archivos
@@ -50,7 +94,7 @@ async function getFileWithAccess(fileId, userId, needed = 'read') {
     throw new AppError('Archivo no encontrado', 404);
   }
 
-  const level = await getFileLevel(file, userId);
+  const { level } = await getFileLevel(file, userId);
   checkLevel(level, needed);
   return { file, level };
 }

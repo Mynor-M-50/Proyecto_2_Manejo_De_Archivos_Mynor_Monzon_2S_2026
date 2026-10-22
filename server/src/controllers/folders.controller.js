@@ -49,34 +49,43 @@ const createFolder = asyncHandler(async (req, res) => {
 const listFolders = asyncHandler(async (req, res) => {
   const { parentId } = req.query;
   let filter;
+  let access = 'owner';
 
   if (parentId) {
-    const { folder } = await getFolderWithAccess(parentId, req.user.id, 'read');
-    filter = { parentId: folder._id, deletedAt: null };
+    const result = await getFolderWithAccess(parentId, req.user.id, 'read');
+    access = result.level;
+    filter = { parentId: result.folder._id, deletedAt: null };
   } else {
     filter = { ownerId: req.user.id, parentId: null, deletedAt: null };
   }
 
   const folders = await Folder.find(filter).collation({ locale: 'es', strength: 2 }).sort({ name: 1 });
-  res.json({ folders: folders.map(serializeFolder) });
+  res.json({ folders: folders.map(serializeFolder), access });
 });
 
-// GET /api/folders/:id  (la carpeta y su ruta de navegacion)
+// GET /api/folders/:id  (la carpeta, su ruta de navegacion y el nivel de acceso del usuario)
 const getFolder = asyncHandler(async (req, res) => {
-  const { folder } = await getFolderWithAccess(req.params.id, req.user.id, 'read');
+  const { folder, level, rootId } = await getFolderWithAccess(req.params.id, req.user.id, 'read');
+
+  // Quien recibio una carpeta compartida solo ve la ruta desde la carpeta que le compartieron
+  let visible = folder.ancestors;
+  if (rootId) {
+    const start = visible.findIndex((a) => String(a) === String(rootId));
+    visible = start === -1 ? [] : visible.slice(start);
+  }
 
   let breadcrumb = [];
-  if (folder.ancestors.length > 0) {
-    const parents = await Folder.find({ _id: { $in: folder.ancestors } }).select('name');
+  if (visible.length > 0) {
+    const parents = await Folder.find({ _id: { $in: visible } }).select('name');
     const byId = new Map(parents.map((p) => [String(p._id), p]));
-    // ancestors esta ordenado de la raiz hacia abajo
-    breadcrumb = folder.ancestors
+    // La ruta esta ordenada de la raiz hacia abajo
+    breadcrumb = visible
       .map((id) => byId.get(String(id)))
       .filter(Boolean)
       .map((p) => ({ id: p._id, name: p.name }));
   }
 
-  res.json({ folder: serializeFolder(folder), breadcrumb });
+  res.json({ folder: serializeFolder(folder), breadcrumb, access: level });
 });
 
 // PATCH /api/folders/:id/rename  { name }

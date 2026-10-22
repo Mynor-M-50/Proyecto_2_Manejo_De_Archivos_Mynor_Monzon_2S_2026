@@ -76,13 +76,15 @@ const uploadFile = asyncHandler(async (req, res) => {
 const listFiles = asyncHandler(async (req, res) => {
   const { folderId, q, ext, sort, order } = req.query;
   const filter = { deletedAt: null };
+  let access = 'owner';
 
   if (folderId === 'root') {
     filter.ownerId = req.user.id;
     filter.folderId = null;
   } else if (folderId) {
-    const { folder } = await getFolderWithAccess(folderId, req.user.id, 'read');
-    filter.folderId = folder._id;
+    const result = await getFolderWithAccess(folderId, req.user.id, 'read');
+    access = result.level;
+    filter.folderId = result.folder._id;
   } else {
     filter.ownerId = req.user.id;
   }
@@ -110,13 +112,13 @@ const listFiles = asyncHandler(async (req, res) => {
     .collation({ locale: 'es', strength: 2 })
     .sort({ [sortField]: direction });
 
-  res.json({ files: files.map(serializeFile) });
+  res.json({ files: files.map(serializeFile), access });
 });
 
 // GET /api/files/:id
 const getFile = asyncHandler(async (req, res) => {
-  const { file } = await getFileWithAccess(req.params.id, req.user.id, 'read');
-  res.json({ file: serializeFile(file) });
+  const { file, level } = await getFileWithAccess(req.params.id, req.user.id, 'read');
+  res.json({ file: serializeFile(file), access: level });
 });
 
 // GET /api/files/:id/content  (el texto del archivo, para verlo o editarlo en pantalla)

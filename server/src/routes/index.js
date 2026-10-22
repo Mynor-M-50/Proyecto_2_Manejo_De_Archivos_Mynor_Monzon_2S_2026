@@ -4,6 +4,7 @@ const usersRoutes = require('./users.routes');
 const foldersRoutes = require('./folders.routes');
 const filesRoutes = require('./files.routes');
 const trashRoutes = require('./trash.routes');
+const sharesRoutes = require('./shares.routes');
 
 const router = express.Router();
 
@@ -16,5 +17,6 @@ router.use('/users', usersRoutes);
 router.use('/folders', foldersRoutes);
 router.use('/files', filesRoutes);
 router.use('/trash', trashRoutes);
+router.use('/shares', sharesRoutes);
 
 module.exports = router;
