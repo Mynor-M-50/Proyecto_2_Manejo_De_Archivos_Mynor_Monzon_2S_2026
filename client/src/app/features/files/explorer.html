@@ -1,0 +1,270 @@
+<section
+  class="page explorer"
+  (dragenter)="onDragEnter($event)"
+  (dragover)="onDragOver($event)"
+  (dragleave)="onDragLeave()"
+  (drop)="onDrop($event)"
+>
+  @if (dragging()) {
+    <div class="drop-overlay">
+      <app-icon name="upload" [size]="40" />
+      <p>Suelta los archivos para subirlos aqui</p>
+    </div>
+  }
+
+  <header class="page-header">
+    <div>
+      <nav class="breadcrumb" aria-label="Ruta de carpetas">
+        <a routerLink="/files"><app-icon name="home" [size]="15" /> Mi unidad</a>
+        @for (b of breadcrumb(); track b.id) {
+          <app-icon name="chevron" [size]="14" />
+          <a [routerLink]="['/files', b.id]">{{ b.name }}</a>
+        }
+        @if (current(); as c) {
+          <app-icon name="chevron" [size]="14" />
+          <span class="current">{{ c.name }}</span>
+        }
+      </nav>
+      <h1>
+        {{ searching() ? 'Resultados de busqueda' : (current()?.name ?? 'Mi unidad') }}
+        @if (!searching() && access() !== 'owner') {
+          <span class="chip chip-warn">{{ accessLabel() }}</span>
+        }
+      </h1>
+    </div>
+
+    @if (!searching() && canEdit()) {
+      <div class="actions">
+        <button class="btn" type="button" (click)="openNewFolder()">
+          <app-icon name="folder-plus" /> Nueva carpeta
+        </button>
+        <button class="btn btn-primary" type="button" [disabled]="!!upload()" (click)="fileInput.click()">
+          <app-icon name="upload" /> Subir archivos
+        </button>
+        <input
+          #fileInput
+          type="file"
+          multiple
+          hidden
+          accept=".txt,.md,text/plain,text/markdown"
+          (change)="onFilesSelected($event)"
+        />
+      </div>
+    }
+  </header>
+
+  <div class="toolbar">
+    <label class="search">
+      <app-icon name="search" [size]="16" />
+      <input
+        type="search"
+        placeholder="Buscar archivos por nombre en todo mi espacio"
+        [ngModel]="searchTerm()"
+        (ngModelChange)="onSearch($event)"
+      />
+    </label>
+    <select class="input small" aria-label="Filtrar por tipo" [ngModel]="extFilter()" (ngModelChange)="onExt($event)">
+      <option value="">Todos los tipos</option>
+      <option value="txt">.txt</option>
+      <option value="md">.md</option>
+    </select>
+    <select class="input small" aria-label="Ordenar por" [ngModel]="sortField()" (ngModelChange)="onSort($event)">
+      <option value="name">Ordenar: nombre</option>
+      <option value="updatedAt">Ordenar: modificacion</option>
+      <option value="createdAt">Ordenar: creacion</option>
+      <option value="size">Ordenar: tamano</option>
+    </select>
+    <button class="btn" type="button" (click)="toggleOrder()">
+      <app-icon [name]="sortOrder() === 'asc' ? 'arrow-up' : 'arrow-down'" [size]="16" />
+      {{ sortOrder() === 'asc' ? 'Ascendente' : 'Descendente' }}
+    </button>
+  </div>
+
+  @if (upload(); as u) {
+    <div class="banner">Subiendo archivos: {{ u.done }} de {{ u.total }}</div>
+  }
+
+  @if (searching()) {
+    <p class="muted search-note">
+      Mostrando archivos de todo tu espacio que coinciden con la busqueda.
+      <button class="linklike" type="button" (click)="clearSearch()">Limpiar busqueda</button>
+    </p>
+  }
+
+  @if (loading()) {
+    <p class="muted loading">Cargando...</p>
+  }
+
+  @if (folders().length > 0 || files().length > 0) {
+    <div class="card table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th>Tamano</th>
+            <th>Modificado</th>
+            <th class="right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (f of folders(); track f.id) {
+            <tr>
+              <td>
+                <a class="name" [routerLink]="['/files', f.id]">
+                  <app-icon class="icon-folder" name="folder" />
+                  <span class="truncate">{{ f.name }}</span>
+                </a>
+              </td>
+              <td><span class="chip">Carpeta</span></td>
+              <td class="muted">-</td>
+              <td class="muted">{{ f.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td class="right">
+                @if (canEdit()) {
+                  <button class="btn-icon" type="button" title="Renombrar" (click)="askRename(folderEntry(f))">
+                    <app-icon name="pencil" />
+                  </button>
+                }
+                @if (isOwner()) {
+                  <button class="btn-icon" type="button" title="Mover" (click)="askMove(folderEntry(f))">
+                    <app-icon name="move" />
+                  </button>
+                  <button class="btn-icon danger" type="button" title="Enviar a la papelera" (click)="askDelete(folderEntry(f))">
+                    <app-icon name="trash" />
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+
+          @for (file of files(); track file.id) {
+            <tr>
+              <td>
+                <a class="name" [routerLink]="['/view', file.id]">
+                  <app-icon class="icon-file" name="file" />
+                  <span class="truncate">{{ file.name }}</span>
+                </a>
+              </td>
+              <td><span class="chip chip-primary">.{{ file.ext }}</span></td>
+              <td class="muted">{{ formatSize(file.size) }}</td>
+              <td class="muted">{{ file.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td class="right">
+                <a class="btn-icon" title="Abrir" [routerLink]="['/view', file.id]">
+                  <app-icon name="eye" />
+                </a>
+                <button class="btn-icon" type="button" title="Descargar" (click)="download(file)">
+                  <app-icon name="download" />
+                </button>
+                @if (canEdit()) {
+                  <button class="btn-icon" type="button" title="Renombrar" (click)="askRename(fileEntry(file))">
+                    <app-icon name="pencil" />
+                  </button>
+                }
+                @if (isOwner()) {
+                  <button class="btn-icon" type="button" title="Mover" (click)="askMove(fileEntry(file))">
+                    <app-icon name="move" />
+                  </button>
+                  <button class="btn-icon danger" type="button" title="Enviar a la papelera" (click)="askDelete(fileEntry(file))">
+                    <app-icon name="trash" />
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else if (!loading()) {
+    <div class="card empty">
+      <app-icon name="folder" [size]="40" />
+      <h2>{{ searching() ? 'Sin resultados' : 'Esta carpeta esta vacia' }}</h2>
+      <p class="muted">
+        @if (searching()) {
+          Prueba con otro nombre o cambia el filtro de tipo.
+        } @else if (canEdit()) {
+          Arrastra archivos .txt o .md aqui, o usa el boton Subir archivos.
+        } @else {
+          No hay nada para mostrar en esta carpeta.
+        }
+      </p>
+    </div>
+  }
+</section>
+
+@switch (dialogType()) {
+  @case ('newFolder') {
+    <app-modal title="Nueva carpeta" (closed)="closeDialog()">
+      <label class="field">
+        <span>Nombre</span>
+        <input
+          appAutofocus
+          class="input"
+          maxlength="100"
+          [ngModel]="dialogName()"
+          (ngModelChange)="dialogName.set($event)"
+          (keydown.enter)="confirmNewFolder()"
+        />
+      </label>
+      @if (dialogError()) {
+        <p class="alert-error" role="alert">{{ dialogError() }}</p>
+      }
+      <div class="modal-actions">
+        <button class="btn" type="button" (click)="closeDialog()">Cancelar</button>
+        <button class="btn btn-primary" type="button" [disabled]="busy()" (click)="confirmNewFolder()">Crear</button>
+      </div>
+    </app-modal>
+  }
+
+  @case ('rename') {
+    <app-modal title="Renombrar" (closed)="closeDialog()">
+      <label class="field">
+        <span>Nuevo nombre</span>
+        <input
+          appAutofocus
+          class="input"
+          maxlength="100"
+          [ngModel]="dialogName()"
+          (ngModelChange)="dialogName.set($event)"
+          (keydown.enter)="confirmRename()"
+        />
+      </label>
+      @if (dialogError()) {
+        <p class="alert-error" role="alert">{{ dialogError() }}</p>
+      }
+      <div class="modal-actions">
+        <button class="btn" type="button" (click)="closeDialog()">Cancelar</button>
+        <button class="btn btn-primary" type="button" [disabled]="busy()" (click)="confirmRename()">Guardar</button>
+      </div>
+    </app-modal>
+  }
+
+  @case ('delete') {
+    <app-modal title="Enviar a la papelera" (closed)="closeDialog()">
+      <p>
+        Se enviara <strong>{{ targetName() }}</strong> a la papelera. Si es una carpeta, tambien su contenido.
+        Podras restaurarlo desde la seccion Papelera.
+      </p>
+      @if (dialogError()) {
+        <p class="alert-error" role="alert">{{ dialogError() }}</p>
+      }
+      <div class="modal-actions">
+        <button class="btn" type="button" (click)="closeDialog()">Cancelar</button>
+        <button class="btn btn-danger" type="button" [disabled]="busy()" (click)="confirmDelete()">Enviar a la papelera</button>
+      </div>
+    </app-modal>
+  }
+
+  @case ('move') {
+    <app-modal [title]="'Mover ' + targetName()" (closed)="closeDialog()">
+      @if (dialogError()) {
+        <p class="alert-error" role="alert">{{ dialogError() }}</p>
+      }
+      <app-folder-picker
+        [excludeId]="targetFolderId()"
+        [busy]="busy()"
+        (confirmed)="confirmMove($event)"
+        (cancelled)="closeDialog()"
+      />
+    </app-modal>
+  }
+}

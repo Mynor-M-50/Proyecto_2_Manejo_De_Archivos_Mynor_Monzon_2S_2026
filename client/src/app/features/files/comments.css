@@ -1,0 +1,15 @@
+.comments { display: flex; flex-direction: column; gap: 12px; }
+.comments h2 { display: flex; align-items: center; gap: 8px; }
+.note { padding: 4px 0; }
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; }
+.item { padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: #fafbfd; }
+.head { display: flex; align-items: center; gap: 8px; }
+.when { font-size: 12px; }
+.del { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
+.body { margin-top: 4px; white-space: pre-wrap; word-wrap: break-word; }
+.compose { display: flex; flex-direction: column; gap: 8px; }
+textarea.input { resize: vertical; font: inherit; }
+.compose-bar { display: flex; align-items: center; justify-content: space-between; }
+.linklike { border: 0; background: none; color: var(--primary); cursor: pointer; padding: 0; font-size: 13px; }
+.linklike:hover { text-decoration: underline; }
+.danger-text { color: var(--danger); }

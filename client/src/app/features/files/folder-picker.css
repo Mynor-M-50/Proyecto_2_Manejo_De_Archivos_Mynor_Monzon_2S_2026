@@ -1,0 +1,17 @@
+.picker-path { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; color: var(--muted); }
+.link { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px; border: 0; background: none; color: var(--primary); cursor: pointer; }
+.link:hover { text-decoration: underline; }
+.picker-list {
+  list-style: none; margin: 0 0 12px; padding: 0; max-height: 240px; overflow-y: auto;
+  border: 1px solid var(--border); border-radius: 8px;
+}
+.picker-list li + li { border-top: 1px solid var(--border); }
+.picker-list button {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px;
+  border: 0; background: none; text-align: left; cursor: pointer; color: var(--text);
+}
+.picker-list button span { flex: 1; }
+.picker-list button:hover { background: #eef1f8; }
+.picker-note { padding: 14px 12px; text-align: center; }
+.error-text { color: #9c1f4c; }
+.picker-hint { margin-bottom: 4px; }

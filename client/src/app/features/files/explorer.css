@@ -1,0 +1,35 @@
+.explorer { min-height: 100vh; }
+.breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; color: var(--muted); font-size: 13px; }
+.breadcrumb a { display: inline-flex; align-items: center; gap: 4px; }
+.breadcrumb .current { color: var(--text); font-weight: 600; }
+.page-header h1 { display: flex; align-items: center; gap: 10px; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.search {
+  display: flex; align-items: center; gap: 8px; flex: 1 1 260px; padding: 0 12px;
+  border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--muted);
+}
+.search:focus-within { outline: 2px solid var(--primary-soft); border-color: var(--primary); }
+.search input { flex: 1; border: 0; outline: 0; padding: 9px 0; background: transparent; font: inherit; color: var(--text); }
+.input.small { width: auto; }
+
+.banner { padding: 10px 14px; margin-bottom: 12px; border-radius: 8px; background: var(--primary-soft); color: var(--primary-dark); font-weight: 600; }
+.search-note { margin-bottom: 10px; }
+.linklike { border: 0; background: none; color: var(--primary); cursor: pointer; padding: 0 4px; }
+.linklike:hover { text-decoration: underline; }
+.loading { margin-bottom: 10px; }
+
+.name { display: inline-flex; align-items: center; gap: 10px; max-width: 420px; color: var(--text); font-weight: 500; }
+a.name:hover { color: var(--primary); text-decoration: none; }
+.icon-folder { color: #f0a020; }
+.icon-file { color: var(--primary); }
+td.right { white-space: nowrap; }
+
+.empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 48px 20px; text-align: center; color: var(--muted); }
+.empty h2 { color: var(--text); }
+
+.drop-overlay {
+  position: fixed; inset: 0; z-index: 40; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  background: rgba(59, 91, 219, 0.14); border: 3px dashed var(--primary); color: var(--primary-dark); font-weight: 600; pointer-events: none;
+}

@@ -1,0 +1,40 @@
+<div class="picker">
+  <div class="picker-path">
+    <button class="link" type="button" (click)="goTo(-1)"><app-icon name="home" [size]="14" /> Mi unidad</button>
+    @for (p of path(); track p.id; let i = $index) {
+      <app-icon name="chevron" [size]="12" />
+      <button class="link" type="button" (click)="goTo(i)">{{ p.name }}</button>
+    }
+  </div>
+
+  <ul class="picker-list">
+    @if (loading()) {
+      <li class="muted picker-note">Cargando...</li>
+    } @else if (error()) {
+      <li class="picker-note error-text">{{ error() }}</li>
+    } @else if (visible().length === 0) {
+      <li class="muted picker-note">No hay mas carpetas en este nivel</li>
+    } @else {
+      @for (f of visible(); track f.id) {
+        <li>
+          <button type="button" (click)="enter(f)">
+            <app-icon name="folder" />
+            <span class="truncate">{{ f.name }}</span>
+            <app-icon name="chevron" [size]="14" />
+          </button>
+        </li>
+      }
+    }
+  </ul>
+
+  <p class="muted picker-hint">
+    Se movera a: <strong>{{ path().length > 0 ? path()[path().length - 1].name : 'Mi unidad' }}</strong>
+  </p>
+
+  <div class="modal-actions">
+    <button class="btn" type="button" (click)="cancelled.emit()">Cancelar</button>
+    <button class="btn btn-primary" type="button" [disabled]="busy()" (click)="confirmed.emit(currentId())">
+      Mover aqui
+    </button>
+  </div>
+</div>

@@ -1,0 +1,35 @@
+.page-header h1 { display: flex; align-items: center; gap: 10px; }
+.back { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 6px; border: 0; background: none; color: var(--primary); cursor: pointer; padding: 0; }
+.back:hover { text-decoration: underline; }
+.flip { transform: rotate(180deg); }
+.icon-file { color: var(--primary); }
+.meta { margin-top: 4px; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+.doc { overflow: hidden; }
+.side { padding: 16px; }
+
+.tabs { display: flex; gap: 4px; padding: 8px 12px 0; border-bottom: 1px solid var(--border); background: #fafbfd; }
+.tabs button { padding: 8px 14px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--muted); cursor: pointer; font: inherit; font-weight: 600; }
+.tabs button.active { color: var(--primary-dark); border-bottom-color: var(--primary); }
+.doc-body { padding: 22px 26px; min-height: 240px; }
+.text-view { margin: 0; white-space: pre-wrap; word-wrap: break-word; font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 13.5px; line-height: 1.6; }
+
+.editor { display: grid; grid-template-columns: 1fr; min-height: 420px; }
+.editor.split { grid-template-columns: 1fr 1fr; }
+.editor-input {
+  width: 100%; min-height: 420px; padding: 18px 20px; border: 0; outline: 0; resize: vertical;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 13.5px; line-height: 1.6; color: var(--text);
+}
+.editor.split .editor-input { border-right: 1px solid var(--border); }
+.editor-preview { padding: 18px 22px; overflow: auto; max-height: 70vh; background: #fcfcfe; }
+.editor-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 14px; border-top: 1px solid var(--border); background: #fafbfd; }
+.editor-actions { display: flex; gap: 10px; }
+.bar-error { margin: 0; border-radius: 0; }
+.linklike { font: inherit; }
+
+@media (max-width: 1000px) {
+  .layout { grid-template-columns: 1fr; }
+  .editor.split { grid-template-columns: 1fr; }
+}

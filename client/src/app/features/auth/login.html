@@ -1,0 +1,53 @@
+<div class="login-page">
+  <div class="card login-card">
+    <div class="login-brand">
+      <span class="login-mark"><app-icon name="folder" [size]="26" /></span>
+      <h1>Gestion Documental</h1>
+      <p class="muted">Inicia sesion para ver tus archivos</p>
+    </div>
+
+    <form (ngSubmit)="submit()">
+      <label class="field">
+        <span>Correo</span>
+        <input
+          class="input"
+          type="email"
+          name="email"
+          autocomplete="username"
+          placeholder="correo@ejemplo.com"
+          [ngModel]="email()"
+          (ngModelChange)="email.set($event)"
+        />
+      </label>
+
+      <label class="field">
+        <span>Contrasena</span>
+        <input
+          class="input"
+          type="password"
+          name="password"
+          autocomplete="current-password"
+          [ngModel]="password()"
+          (ngModelChange)="password.set($event)"
+        />
+      </label>
+
+      @if (error()) {
+        <p class="alert-error" role="alert">{{ error() }}</p>
+      }
+
+      <button class="btn btn-primary login-submit" type="submit" [disabled]="loading()">
+        {{ loading() ? 'Ingresando...' : 'Ingresar' }}
+      </button>
+    </form>
+
+    <div class="demo">
+      <p class="muted">Usuarios de prueba</p>
+      <div class="demo-buttons">
+        @for (d of demos; track d.email) {
+          <button class="btn btn-sm" type="button" (click)="fillDemo(d)">{{ d.label }}</button>
+        }
+      </div>
+    </div>
+  </div>
+</div>

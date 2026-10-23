@@ -1,0 +1,140 @@
+<section class="page viewer">
+  <header class="page-header">
+    <div class="titles">
+      <button class="linklike back" type="button" (click)="back()">
+        <app-icon class="flip" name="chevron" [size]="15" /> Volver
+      </button>
+      @if (file(); as f) {
+        <h1>
+          <app-icon class="icon-file" name="file" />
+          <span class="truncate">{{ f.name }}</span>
+          <span class="chip chip-primary">.{{ f.ext }}</span>
+          @if (access() !== 'owner') {
+            <span class="chip chip-warn">{{ accessLabel() }}</span>
+          }
+        </h1>
+        <p class="muted meta">
+          {{ formatSize(f.size) }} | Modificado {{ f.updatedAt | date: 'dd/MM/yyyy HH:mm' }} | Creado
+          {{ f.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+        </p>
+      } @else if (loading()) {
+        <h1>Cargando...</h1>
+      }
+    </div>
+
+    @if (file()) {
+      <div class="actions">
+        <button class="btn" type="button" (click)="download()"><app-icon name="download" /> Descargar</button>
+        @if (mode() === 'view') {
+          @if (canEdit()) {
+            <button class="btn btn-primary" type="button" (click)="startEdit()"><app-icon name="pencil" /> Editar</button>
+          }
+          @if (isOwner()) {
+            <button class="btn" type="button" (click)="askDelete()"><app-icon name="trash" /> Papelera</button>
+          }
+        }
+      </div>
+    }
+  </header>
+
+  @if (loadError()) {
+    <p class="alert-error" role="alert">{{ loadError() }}</p>
+  }
+
+  @if (file()) {
+    <div class="layout">
+      <div class="card doc">
+        @if (mode() === 'view') {
+          @if (isMarkdown()) {
+            <div class="tabs" role="tablist">
+              <button type="button" role="tab" [class.active]="viewMode() === 'preview'" (click)="viewMode.set('preview')">
+                Vista previa
+              </button>
+              <button type="button" role="tab" [class.active]="viewMode() === 'source'" (click)="viewMode.set('source')">
+                Codigo
+              </button>
+            </div>
+          }
+          <div class="doc-body">
+            @if (!content()) {
+              <p class="muted">El archivo esta vacio.</p>
+            } @else if (isMarkdown() && viewMode() === 'preview') {
+              <app-markdown [source]="content()" />
+            } @else {
+              <pre class="text-view">{{ content() }}</pre>
+            }
+          </div>
+        } @else {
+          <div class="editor" [class.split]="isMarkdown()">
+            <textarea
+              appAutofocus
+              class="editor-input"
+              spellcheck="false"
+              aria-label="Contenido del archivo"
+              [ngModel]="draft()"
+              (ngModelChange)="draft.set($event)"
+              (keydown)="onEditorKey($event)"
+            ></textarea>
+            @if (isMarkdown()) {
+              <div class="editor-preview">
+                <app-markdown [source]="draft()" />
+              </div>
+            }
+          </div>
+          <div class="editor-bar">
+            <span class="muted">
+              {{ formatSize(draftBytes()) }}
+              @if (dirty()) { | Sin guardar } @else { | Sin cambios }
+              | Ctrl+S para guardar
+            </span>
+            <div class="editor-actions">
+              <button class="btn" type="button" (click)="cancelEdit()">Cancelar</button>
+              <button class="btn btn-primary" type="button" [disabled]="saving() || !dirty()" (click)="save()">
+                {{ saving() ? 'Guardando...' : 'Guardar' }}
+              </button>
+            </div>
+          </div>
+          @if (tooBig()) {
+            <p class="alert-error bar-error" role="alert">El contenido supera el tamano maximo de 5 MB.</p>
+          }
+          @if (saveError()) {
+            <p class="alert-error bar-error" role="alert">{{ saveError() }}</p>
+          }
+        }
+      </div>
+
+      <aside class="card side">
+        @if (file(); as f) {
+          <app-comments [fileId]="f.id" [access]="access()" />
+        }
+      </aside>
+    </div>
+  }
+</section>
+
+@if (confirmDiscard()) {
+  <app-modal title="Descartar cambios" (closed)="confirmDiscard.set(false)">
+    <p>Hiciste cambios que no se han guardado. Si sales del editor se perderan.</p>
+    <div class="modal-actions">
+      <button class="btn" type="button" (click)="confirmDiscard.set(false)">Seguir editando</button>
+      <button class="btn btn-danger" type="button" (click)="discard()">Descartar</button>
+    </div>
+  </app-modal>
+}
+
+@if (confirmDelete()) {
+  <app-modal title="Enviar a la papelera" (closed)="confirmDelete.set(false)">
+    <p>
+      Se enviara <strong>{{ file()?.name }}</strong> a la papelera. Podras restaurarlo desde la seccion Papelera.
+    </p>
+    @if (deleteError()) {
+      <p class="alert-error" role="alert">{{ deleteError() }}</p>
+    }
+    <div class="modal-actions">
+      <button class="btn" type="button" (click)="confirmDelete.set(false)">Cancelar</button>
+      <button class="btn btn-danger" type="button" [disabled]="deleting()" (click)="confirmTrash()">
+        Enviar a la papelera
+      </button>
+    </div>
+  </app-modal>
+}

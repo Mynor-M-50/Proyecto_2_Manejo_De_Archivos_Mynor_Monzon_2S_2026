@@ -1,0 +1,34 @@
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark"><app-icon name="folder" [size]="20" /></span>
+      <span class="brand-name">Gestion Documental</span>
+    </div>
+
+    <nav class="nav" aria-label="Menu principal">
+      <a routerLink="/files" routerLinkActive="active"><app-icon name="folder" /> Mis archivos</a>
+      <a routerLink="/shared" routerLinkActive="active"><app-icon name="share" /> Compartidos</a>
+      <a routerLink="/trash" routerLinkActive="active"><app-icon name="trash" /> Papelera</a>
+      <a routerLink="/reports" routerLinkActive="active"><app-icon name="chart" /> Reportes</a>
+      @if (auth.isAdmin()) {
+        <a routerLink="/users" routerLinkActive="active"><app-icon name="users" /> Usuarios</a>
+      }
+    </nav>
+
+    <div class="user-box">
+      <div class="user-info">
+        <strong class="truncate">{{ auth.user()?.name }}</strong>
+        <span class="chip" [class.chip-primary]="auth.isAdmin()">
+          {{ auth.isAdmin() ? 'Administrador' : 'Usuario' }}
+        </span>
+      </div>
+      <button class="btn btn-ghost btn-sm" type="button" (click)="logout()">
+        <app-icon name="logout" [size]="16" /> Salir
+      </button>
+    </div>
+  </aside>
+
+  <main class="content">
+    <router-outlet />
+  </main>
+</div>

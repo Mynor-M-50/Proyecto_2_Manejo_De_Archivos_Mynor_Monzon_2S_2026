@@ -1,0 +1,61 @@
+<div class="comments">
+  <h2>
+    <app-icon name="message" /> Comentarios
+    <span class="chip">{{ comments().length }}</span>
+  </h2>
+
+  @if (loading()) {
+    <p class="muted note">Cargando comentarios...</p>
+  } @else if (error()) {
+    <p class="alert-error" role="alert">{{ error() }}</p>
+  } @else if (comments().length === 0) {
+    <p class="muted note">Todavia no hay comentarios.</p>
+  } @else {
+    <ul class="list">
+      @for (c of comments(); track c.id) {
+        <li class="item">
+          <div class="head">
+            <strong class="truncate">{{ c.author.name }}</strong>
+            <span class="muted when">{{ c.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+            @if (canDelete(c)) {
+              <span class="del">
+                @if (confirmingId() === c.id) {
+                  <button class="linklike danger-text" type="button" (click)="remove(c)">Confirmar</button>
+                  <button class="linklike" type="button" (click)="confirmingId.set(null)">Cancelar</button>
+                } @else {
+                  <button class="btn-icon danger" type="button" title="Eliminar comentario" (click)="askRemove(c)">
+                    <app-icon name="trash" [size]="15" />
+                  </button>
+                }
+              </span>
+            }
+          </div>
+          <p class="body">{{ c.text }}</p>
+        </li>
+      }
+    </ul>
+  }
+
+  @if (canComment()) {
+    <div class="compose">
+      <textarea
+        class="input"
+        rows="3"
+        placeholder="Escribe un comentario (Ctrl+Enter para enviar)"
+        [maxlength]="maxLength"
+        [ngModel]="text()"
+        (ngModelChange)="text.set($event)"
+        (keydown.control.enter)="send()"
+        (keydown.meta.enter)="send()"
+      ></textarea>
+      <div class="compose-bar">
+        <span class="muted">{{ text().length }} / {{ maxLength }}</span>
+        <button class="btn btn-primary btn-sm" type="button" [disabled]="sending() || !text().trim()" (click)="send()">
+          {{ sending() ? 'Enviando...' : 'Comentar' }}
+        </button>
+      </div>
+    </div>
+  } @else {
+    <p class="muted note">Tienes permiso de solo lectura: puedes ver los comentarios pero no escribir.</p>
+  }
+</div>

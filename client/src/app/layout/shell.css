@@ -1,0 +1,28 @@
+.shell { display: flex; min-height: 100vh; }
+.sidebar {
+  position: sticky; top: 0; display: flex; flex-direction: column; gap: 18px;
+  width: 240px; height: 100vh; padding: 20px 14px; background: var(--surface); border-right: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 6px; }
+.brand-mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 9px; background: var(--primary); color: #fff;
+}
+.brand-name { font-weight: 700; font-size: 15px; line-height: 1.15; }
+.nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.nav a {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px;
+  color: var(--text); font-weight: 500;
+}
+.nav a:hover { background: #eef1f8; text-decoration: none; }
+.nav a.active { background: var(--primary-soft); color: var(--primary-dark); }
+.user-box { display: flex; flex-direction: column; gap: 8px; padding: 12px 8px 0; border-top: 1px solid var(--border); }
+.user-info { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.content { flex: 1; min-width: 0; }
+
+@media (max-width: 800px) {
+  .shell { flex-direction: column; }
+  .sidebar { position: static; width: 100%; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .nav { flex-direction: row; flex-wrap: wrap; flex: 1 1 auto; }
+  .user-box { border-top: 0; padding: 0; flex-direction: row; align-items: center; }
+}
