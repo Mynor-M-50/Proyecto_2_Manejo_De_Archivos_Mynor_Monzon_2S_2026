@@ -1,0 +1,108 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Papelera</h1>
+      <p class="muted">Lo que eliminas se queda aqui hasta que lo restaures o lo borres para siempre.</p>
+    </div>
+    <div class="actions">
+      <button class="btn btn-danger" type="button" [disabled]="isEmpty() || loading()" (click)="askEmpty()">
+        <app-icon name="trash" /> Vaciar papelera
+      </button>
+    </div>
+  </header>
+
+  @if (error()) {
+    <p class="alert-error" role="alert">{{ error() }}</p>
+  }
+
+  @if (loading() && isEmpty()) {
+    <p class="muted">Cargando...</p>
+  }
+
+  @if (!isEmpty()) {
+    <div class="card table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Contenido</th>
+            <th>Eliminado</th>
+            <th class="right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of items(); track item.id) {
+            <tr>
+              <td>
+                <span class="name">
+                  <app-icon [class.icon-folder]="item.type === 'folder'" [class.icon-file]="item.type === 'file'" [name]="item.type === 'folder' ? 'folder' : 'file'" />
+                  <span class="truncate">{{ item.name }}</span>
+                </span>
+              </td>
+              <td class="muted">
+                @if (item.type === 'folder') {
+                  {{ contents(item) }}
+                } @else {
+                  <span class="chip chip-primary">.{{ item.ext }}</span> {{ formatSize(item.size ?? 0) }}
+                }
+              </td>
+              <td class="muted">{{ item.deletedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td class="right">
+                <button class="btn btn-sm" type="button" [disabled]="restoringId() === item.id" (click)="restore(item)">
+                  <app-icon name="restore" [size]="15" />
+                  {{ restoringId() === item.id ? 'Restaurando...' : 'Restaurar' }}
+                </button>
+                <button class="btn-icon danger" type="button" title="Eliminar definitivamente" (click)="askDelete(item)">
+                  <app-icon name="trash" />
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else if (!loading() && !error()) {
+    <div class="card empty">
+      <app-icon name="trash" [size]="40" />
+      <h2>La papelera esta vacia</h2>
+      <p class="muted">Cuando envies archivos o carpetas a la papelera, los veras aqui.</p>
+    </div>
+  }
+</section>
+
+@switch (dialog()) {
+  @case ('delete') {
+    <app-modal title="Eliminar definitivamente" (closed)="closeDialog()">
+      @if (target(); as t) {
+        <p>
+          @if (t.type === 'folder') {
+            Se eliminara <strong>{{ t.name }}</strong> con todo su contenido ({{ contents(t) }}).
+          } @else {
+            Se eliminara <strong>{{ t.name }}</strong>.
+          }
+          Esta accion no se puede deshacer.
+        </p>
+      }
+      @if (dialogError()) {
+        <p class="alert-error" role="alert">{{ dialogError() }}</p>
+      }
+      <div class="modal-actions">
+        <button class="btn" type="button" (click)="closeDialog()">Cancelar</button>
+        <button class="btn btn-danger" type="button" [disabled]="busy()" (click)="confirmDelete()">Eliminar para siempre</button>
+      </div>
+    </app-modal>
+  }
+
+  @case ('empty') {
+    <app-modal title="Vaciar la papelera" (closed)="closeDialog()">
+      <p>{{ emptyMessage() }} Esta accion no se puede deshacer.</p>
+      @if (dialogError()) {
+        <p class="alert-error" role="alert">{{ dialogError() }}</p>
+      }
+      <div class="modal-actions">
+        <button class="btn" type="button" (click)="closeDialog()">Cancelar</button>
+        <button class="btn btn-danger" type="button" [disabled]="busy()" (click)="confirmEmpty()">Vaciar papelera</button>
+      </div>
+    </app-modal>
+  }
+}

@@ -30,6 +30,7 @@
             <button class="btn btn-primary" type="button" (click)="startEdit()"><app-icon name="pencil" /> Editar</button>
           }
           @if (isOwner()) {
+            <button class="btn" type="button" (click)="shareOpen.set(true)"><app-icon name="share" /> Compartir</button>
             <button class="btn" type="button" (click)="askDelete()"><app-icon name="trash" /> Papelera</button>
           }
         }
@@ -137,4 +138,10 @@
       </button>
     </div>
   </app-modal>
+}
+
+@if (shareOpen()) {
+  @if (file(); as f) {
+    <app-share-dialog resourceType="file" [resourceId]="f.id" [resourceName]="f.name" (closed)="shareOpen.set(false)" />
+  }
 }

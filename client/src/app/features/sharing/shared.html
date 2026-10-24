@@ -1,0 +1,139 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Compartidos</h1>
+      <p class="muted">Lo que otras personas compartieron contigo y lo que tu compartiste.</p>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" [class.active]="tab() === 'with'" (click)="tab.set('with')">
+      Compartidos conmigo ({{ withMe().length }})
+    </button>
+    <button type="button" role="tab" [class.active]="tab() === 'by'" (click)="tab.set('by')">
+      Compartidos por mi ({{ byMe().length }})
+    </button>
+  </div>
+
+  <label class="search">
+    <app-icon name="search" [size]="16" />
+    <input
+      type="search"
+      placeholder="Filtrar por nombre o por persona"
+      [ngModel]="filter()"
+      (ngModelChange)="filter.set($event)"
+    />
+  </label>
+
+  @if (error()) {
+    <p class="alert-error" role="alert">{{ error() }}</p>
+  }
+  @if (loading() && withMe().length === 0 && byMe().length === 0) {
+    <p class="muted">Cargando...</p>
+  }
+
+  @if (tab() === 'with') {
+    @if (visibleWith().length > 0) {
+      <div class="card table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Propietario</th>
+              <th>Tu permiso</th>
+              <th>Compartido</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of visibleWith(); track s.id) {
+              <tr>
+                <td>
+                  <a class="name" [routerLink]="linkFor(s)">
+                    <app-icon [class.icon-folder]="s.resourceType === 'folder'" [class.icon-file]="s.resourceType === 'file'" [name]="s.resourceType === 'folder' ? 'folder' : 'file'" />
+                    <span class="truncate">{{ s.resource.name }}</span>
+                  </a>
+                </td>
+                <td>{{ s.owner.name }}</td>
+                <td><span class="chip chip-primary">{{ permissionLabel(s.permission) }}</span></td>
+                <td class="muted">{{ s.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else if (!loading()) {
+      <div class="card empty">
+        <app-icon name="share" [size]="40" />
+        <h2>{{ filter().trim() ? 'Sin resultados' : 'Nadie ha compartido nada contigo todavia' }}</h2>
+        <p class="muted">
+          {{ filter().trim() ? 'Prueba con otro nombre.' : 'Cuando alguien comparta un archivo o una carpeta contigo, aparecera aqui.' }}
+        </p>
+      </div>
+    }
+  } @else {
+    @if (visibleBy().length > 0) {
+      <div class="card table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Compartido con</th>
+              <th>Permiso</th>
+              <th>Fecha</th>
+              <th class="right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of visibleBy(); track s.id) {
+              <tr>
+                <td>
+                  <a class="name" [routerLink]="linkFor(s)">
+                    <app-icon [class.icon-folder]="s.resourceType === 'folder'" [class.icon-file]="s.resourceType === 'file'" [name]="s.resourceType === 'folder' ? 'folder' : 'file'" />
+                    <span class="truncate">{{ s.resource.name }}</span>
+                  </a>
+                </td>
+                <td>
+                  <span class="who">
+                    <strong class="truncate">{{ s.sharedWith.name }}</strong>
+                    <span class="muted truncate">{{ s.sharedWith.email }}</span>
+                  </span>
+                </td>
+                <td>
+                  <select
+                    class="input perm"
+                    [attr.aria-label]="'Permiso de ' + s.sharedWith.name"
+                    [ngModel]="s.permission"
+                    (ngModelChange)="changePermission(s, $event)"
+                  >
+                    @for (p of permissions; track p.value) {
+                      <option [value]="p.value">{{ p.label }}</option>
+                    }
+                  </select>
+                </td>
+                <td class="muted">{{ s.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td class="right">
+                  @if (confirmingId() === s.id) {
+                    <button class="linklike danger-text" type="button" (click)="remove(s)">Quitar</button>
+                    <button class="linklike" type="button" (click)="confirmingId.set(null)">Cancelar</button>
+                  } @else {
+                    <button class="btn-icon danger" type="button" title="Quitar acceso" (click)="askRemove(s)">
+                      <app-icon name="x" />
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else if (!loading()) {
+      <div class="card empty">
+        <app-icon name="share" [size]="40" />
+        <h2>{{ filter().trim() ? 'Sin resultados' : 'Todavia no has compartido nada' }}</h2>
+        <p class="muted">
+          {{ filter().trim() ? 'Prueba con otro nombre.' : 'En Mis archivos, usa el boton Compartir de un archivo o una carpeta.' }}
+        </p>
+      </div>
+    }
+  }
+</section>

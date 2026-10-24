@@ -28,6 +28,7 @@ import { saveBlob } from '../../shared/download';
 import { formatSize } from '../../shared/format';
 import { Icon } from '../../shared/icon';
 import { Modal } from '../../shared/modal';
+import { ShareDialog } from '../sharing/share-dialog';
 import { FolderPicker } from './folder-picker';
 
 // Lo que se muestra en pantalla despues de consultar al servidor
@@ -55,7 +56,7 @@ const ACCESS_LABELS: Record<Access, string> = {
 // Explorador: navega por carpetas, sube, descarga, renombra, mueve y elimina
 @Component({
   selector: 'app-explorer',
-  imports: [DatePipe, FormsModule, RouterLink, Icon, Modal, Autofocus, FolderPicker],
+  imports: [DatePipe, FormsModule, RouterLink, Icon, Modal, Autofocus, FolderPicker, ShareDialog],
   templateUrl: './explorer.html',
   styleUrl: './explorer.css',
 })
@@ -106,6 +107,17 @@ export class Explorer {
       return '';
     }
     return entry.kind === 'folder' ? entry.folder.name : entry.file.name;
+  });
+  // Archivo o carpeta que se esta compartiendo (abre la ventana de compartir)
+  protected readonly shareTarget = signal<Entry | null>(null);
+  protected readonly shareResource = computed(() => {
+    const entry = this.shareTarget();
+    if (!entry) {
+      return null;
+    }
+    return entry.kind === 'folder'
+      ? { type: 'folder' as const, id: entry.folder.id, name: entry.folder.name }
+      : { type: 'file' as const, id: entry.file.id, name: entry.file.name };
   });
   protected readonly targetFolderId = computed(() => {
     const entry = this.target();
@@ -265,6 +277,10 @@ export class Explorer {
     this.resetDialog();
     this.target.set(entry);
     this.dialogType.set('move');
+  }
+
+  protected openShare(entry: Entry): void {
+    this.shareTarget.set(entry);
   }
 
   protected closeDialog(): void {

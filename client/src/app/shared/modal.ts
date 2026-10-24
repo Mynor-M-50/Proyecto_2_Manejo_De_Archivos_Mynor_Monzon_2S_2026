@@ -8,7 +8,7 @@ import { Icon } from './icon';
   host: { '(document:keydown.escape)': 'closed.emit()' },
   template: `
     <div class="modal-backdrop" (click)="closed.emit()">
-      <div class="modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <div class="modal" [class.modal-wide]="wide()" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
         <header class="modal-header">
           <h2>{{ title() }}</h2>
           <button class="btn-icon" type="button" aria-label="Cerrar" (click)="closed.emit()">
@@ -21,8 +21,11 @@ import { Icon } from './icon';
       </div>
     </div>
   `,
+  styles: ['.modal.modal-wide { max-width: 640px; }'],
 })
 export class Modal {
   readonly title = input.required<string>();
+  // Ventana mas ancha, para contenido con listas
+  readonly wide = input(false);
   readonly closed = output<void>();
 }

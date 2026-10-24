@@ -5,12 +5,6 @@ import { AuthService } from '../../core/auth.service';
 import { errorMessage } from '../../core/errors';
 import { Icon } from '../../shared/icon';
 
-interface DemoUser {
-  label: string;
-  email: string;
-  password: string;
-}
-
 @Component({
   selector: 'app-login',
   imports: [FormsModule, Icon],
@@ -23,20 +17,12 @@ export class Login {
 
   protected readonly email = signal('');
   protected readonly password = signal('');
+  protected readonly showPassword = signal(false);
   protected readonly loading = signal(false);
   protected readonly error = signal('');
 
-  // Usuarios de la carga inicial, para probar rapido cada rol
-  protected readonly demos: DemoUser[] = [
-    { label: 'Administrador', email: 'admin@gestion.com', password: 'Admin123*' },
-    { label: 'Ana', email: 'ana@gestion.com', password: 'User123*' },
-    { label: 'Luis', email: 'luis@gestion.com', password: 'User123*' },
-  ];
-
-  protected fillDemo(demo: DemoUser): void {
-    this.email.set(demo.email);
-    this.password.set(demo.password);
-    this.error.set('');
+  protected togglePassword(): void {
+    this.showPassword.update((visible) => !visible);
   }
 
   protected submit(): void {

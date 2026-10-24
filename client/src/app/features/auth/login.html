@@ -22,14 +22,25 @@
 
       <label class="field">
         <span>Contrasena</span>
-        <input
-          class="input"
-          type="password"
-          name="password"
-          autocomplete="current-password"
-          [ngModel]="password()"
-          (ngModelChange)="password.set($event)"
-        />
+        <div class="password-wrap">
+          <input
+            class="input"
+            name="password"
+            autocomplete="current-password"
+            [type]="showPassword() ? 'text' : 'password'"
+            [ngModel]="password()"
+            (ngModelChange)="password.set($event)"
+          />
+          <button
+            class="toggle"
+            type="button"
+            [attr.aria-label]="showPassword() ? 'Ocultar contrasena' : 'Mostrar contrasena'"
+            [attr.aria-pressed]="showPassword()"
+            (click)="togglePassword()"
+          >
+            <app-icon [name]="showPassword() ? 'eye-off' : 'eye'" />
+          </button>
+        </div>
       </label>
 
       @if (error()) {
@@ -40,14 +51,5 @@
         {{ loading() ? 'Ingresando...' : 'Ingresar' }}
       </button>
     </form>
-
-    <div class="demo">
-      <p class="muted">Usuarios de prueba</p>
-      <div class="demo-buttons">
-        @for (d of demos; track d.email) {
-          <button class="btn btn-sm" type="button" (click)="fillDemo(d)">{{ d.label }}</button>
-        }
-      </div>
-    </div>
   </div>
 </div>

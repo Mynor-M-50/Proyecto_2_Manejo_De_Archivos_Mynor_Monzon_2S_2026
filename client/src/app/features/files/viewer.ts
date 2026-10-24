@@ -14,6 +14,7 @@ import { formatSize } from '../../shared/format';
 import { Icon } from '../../shared/icon';
 import { MarkdownView } from '../../shared/markdown-view';
 import { Modal } from '../../shared/modal';
+import { ShareDialog } from '../sharing/share-dialog';
 import { Comments } from './comments';
 
 const MAX_CONTENT_BYTES = 5 * 1024 * 1024;
@@ -28,7 +29,7 @@ const ACCESS_LABELS: Record<Access, string> = {
 // Visor de un archivo: muestra el texto (los .md ya formateados), permite editarlo y tiene comentarios
 @Component({
   selector: 'app-viewer',
-  imports: [DatePipe, FormsModule, Icon, Modal, Autofocus, MarkdownView, Comments],
+  imports: [DatePipe, FormsModule, Icon, Modal, Autofocus, MarkdownView, Comments, ShareDialog],
   host: { '(window:beforeunload)': 'onBeforeUnload($event)' },
   templateUrl: './viewer.html',
   styleUrl: './viewer.css',
@@ -56,6 +57,7 @@ export class Viewer {
   protected readonly saving = signal(false);
   protected readonly saveError = signal('');
 
+  protected readonly shareOpen = signal(false);
   protected readonly confirmDiscard = signal(false);
   protected readonly confirmDelete = signal(false);
   protected readonly deleting = signal(false);

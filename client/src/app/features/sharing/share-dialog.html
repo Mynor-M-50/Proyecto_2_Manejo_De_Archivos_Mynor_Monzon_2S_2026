@@ -1,0 +1,83 @@
+<app-modal [title]="'Compartir: ' + resourceName()" [wide]="true" (closed)="closed.emit()">
+  <form (ngSubmit)="add()">
+    <div class="field">
+      <span>Compartir con (correo del usuario)</span>
+      <div class="add-row">
+        <input
+          appAutofocus
+          class="input"
+          type="email"
+          name="email"
+          autocomplete="off"
+          aria-label="Correo del usuario"
+          placeholder="correo@ejemplo.com"
+          [ngModel]="email()"
+          (ngModelChange)="email.set($event)"
+        />
+        <select
+          class="input perm"
+          name="permission"
+          aria-label="Permiso"
+          [ngModel]="permission()"
+          (ngModelChange)="permission.set($event)"
+        >
+          @for (p of permissions; track p.value) {
+            <option [value]="p.value">{{ p.label }}</option>
+          }
+        </select>
+        <button class="btn btn-primary" type="submit" [disabled]="adding()">
+          {{ adding() ? 'Compartiendo...' : 'Compartir' }}
+        </button>
+      </div>
+    </div>
+    @if (formError()) {
+      <p class="alert-error" role="alert">{{ formError() }}</p>
+    }
+    <p class="muted hint">{{ permissionHint() }}</p>
+  </form>
+
+  <h3 class="list-title">Personas con acceso ({{ shares().length }})</h3>
+
+  @if (loading()) {
+    <p class="muted">Cargando...</p>
+  } @else if (error()) {
+    <p class="alert-error" role="alert">{{ error() }}</p>
+  } @else if (shares().length === 0) {
+    <p class="muted">Todavia no se ha compartido con nadie.</p>
+  } @else {
+    <ul class="list">
+      @for (s of shares(); track s.id) {
+        <li class="row">
+          <div class="who">
+            <strong class="truncate">{{ s.sharedWith.name }}</strong>
+            <span class="muted truncate">{{ s.sharedWith.email }}</span>
+          </div>
+          <select
+            class="input perm"
+            [attr.aria-label]="'Permiso de ' + s.sharedWith.name"
+            [ngModel]="s.permission"
+            (ngModelChange)="changePermission(s, $event)"
+          >
+            @for (p of permissions; track p.value) {
+              <option [value]="p.value">{{ p.label }}</option>
+            }
+          </select>
+          @if (confirmingId() === s.id) {
+            <span class="confirm">
+              <button class="linklike danger-text" type="button" (click)="remove(s)">Quitar</button>
+              <button class="linklike" type="button" (click)="confirmingId.set(null)">Cancelar</button>
+            </span>
+          } @else {
+            <button class="btn-icon danger" type="button" title="Quitar acceso" (click)="askRemove(s)">
+              <app-icon name="x" />
+            </button>
+          }
+        </li>
+      }
+    </ul>
+  }
+
+  <div class="modal-actions">
+    <button class="btn" type="button" (click)="closed.emit()">Cerrar</button>
+  </div>
+</app-modal>

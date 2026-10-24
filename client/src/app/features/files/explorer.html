@@ -15,7 +15,11 @@
   <header class="page-header">
     <div>
       <nav class="breadcrumb" aria-label="Ruta de carpetas">
-        <a routerLink="/files"><app-icon name="home" [size]="15" /> Mi unidad</a>
+        @if (isOwner()) {
+          <a routerLink="/files"><app-icon name="home" [size]="15" /> Mi unidad</a>
+        } @else {
+          <a routerLink="/shared"><app-icon name="share" [size]="15" /> Compartidos</a>
+        }
         @for (b of breadcrumb(); track b.id) {
           <app-icon name="chevron" [size]="14" />
           <a [routerLink]="['/files', b.id]">{{ b.name }}</a>
@@ -126,6 +130,9 @@
                   </button>
                 }
                 @if (isOwner()) {
+                  <button class="btn-icon" type="button" title="Compartir" (click)="openShare(folderEntry(f))">
+                    <app-icon name="share" />
+                  </button>
                   <button class="btn-icon" type="button" title="Mover" (click)="askMove(folderEntry(f))">
                     <app-icon name="move" />
                   </button>
@@ -161,6 +168,9 @@
                   </button>
                 }
                 @if (isOwner()) {
+                  <button class="btn-icon" type="button" title="Compartir" (click)="openShare(fileEntry(file))">
+                    <app-icon name="share" />
+                  </button>
                   <button class="btn-icon" type="button" title="Mover" (click)="askMove(fileEntry(file))">
                     <app-icon name="move" />
                   </button>
@@ -267,4 +277,13 @@
       />
     </app-modal>
   }
+}
+
+@if (shareResource(); as r) {
+  <app-share-dialog
+    [resourceType]="r.type"
+    [resourceId]="r.id"
+    [resourceName]="r.name"
+    (closed)="shareTarget.set(null)"
+  />
 }
