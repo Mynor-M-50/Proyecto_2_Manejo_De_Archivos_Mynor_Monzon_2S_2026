@@ -9,6 +9,8 @@ export interface User {
   role: Role;
   active: boolean;
   storageUsed: number;
+  storageQuota: number;
+  storageAvailable: number;
   createdAt: string;
 }
 

@@ -138,6 +138,7 @@ export class Reports {
       .subscribe((res) => this.showResult(res));
   }
 
+  // Elige un reporte y lo ejecuta con sus valores por defecto
   protected select(item: CatalogItem): void {
     this.selected.set(item);
     this.values.set(this.defaultValues(item));
@@ -147,6 +148,7 @@ export class Reports {
     this.run();
   }
 
+  // Valores iniciales de los filtros del reporte
   private defaultValues(item: CatalogItem): Record<string, string> {
     const values: Record<string, string> = {};
     const def = REPORTS[item.key];
@@ -165,10 +167,12 @@ export class Reports {
     return this.values()[name] ?? '';
   }
 
+  // Guarda el valor de un filtro
   protected setValue(name: string, value: unknown): void {
     this.values.update((current) => ({ ...current, [name]: String(value ?? '') }));
   }
 
+  // Ejecuta el reporte con los filtros actuales
   protected run(): void {
     const item = this.selected();
     const def = this.def();
@@ -202,6 +206,7 @@ export class Reports {
     this.run$.next({ item, params });
   }
 
+  // Muestra las filas devueltas por el servidor
   private showResult(res: ReportResponse): void {
     const def = this.def();
     this.rows.set(res.items);
@@ -210,6 +215,7 @@ export class Reports {
     this.running.set(false);
   }
 
+  // Ancho de la barra de una fila respecto al valor mayor
   protected barPercent(row: any): number {
     const bar = this.def()?.bar;
     const max = this.maxBar();

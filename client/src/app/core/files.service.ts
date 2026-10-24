@@ -17,6 +17,7 @@ export class FilesService {
   private readonly http = inject(HttpClient);
   private readonly url = `${API_URL}/files`;
 
+  // Lista archivos segun carpeta, busqueda, tipo y orden
   list(query: FileQuery) {
     const params: Record<string, string> = {};
     for (const [key, value] of Object.entries(query)) {
@@ -52,10 +53,12 @@ export class FilesService {
     return this.http.post<{ file: FileItem }>(this.url, form);
   }
 
+  // Descarga el archivo como Blob
   download(id: string) {
     return this.http.get(`${this.url}/${id}/download`, { responseType: 'blob' });
   }
 
+  // Cambia el nombre (debe terminar en .txt o .md)
   rename(id: string, name: string) {
     return this.http.patch<{ file: FileItem }>(`${this.url}/${id}/rename`, { name });
   }
@@ -65,6 +68,7 @@ export class FilesService {
     return this.http.patch<{ file: FileItem }>(`${this.url}/${id}/move`, { folderId });
   }
 
+  // Envia el archivo a la papelera
   trash(id: string) {
     return this.http.delete<{ message: string }>(`${this.url}/${id}`);
   }

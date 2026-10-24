@@ -11,6 +11,7 @@ try {
 const uri = process.env.MONGO_URI || 'mongodb://localhost:27017';
 const dbName = process.env.DB_NAME || 'gestion_documental';
 
+// Crea los indices de cada coleccion (cada uno indica para que consulta sirve)
 async function createIndexes(db) {
   // users: el correo identifica al usuario
   await db.collection('users').createIndex({ email: 1 }, { unique: true });
@@ -45,6 +46,7 @@ async function createIndexes(db) {
   await db.collection('activity_logs').createIndex({ createdAt: -1 });
 }
 
+// Se conecta a MongoDB, crea los indices y muestra los que quedaron
 async function main() {
   const client = new MongoClient(uri);
   try {

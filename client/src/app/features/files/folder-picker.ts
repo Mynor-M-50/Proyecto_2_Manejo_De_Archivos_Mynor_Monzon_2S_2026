@@ -38,6 +38,7 @@ export class FolderPicker {
     this.load();
   }
 
+  // Entra a una subcarpeta
   protected enter(folder: Folder): void {
     this.path.update((path) => [...path, { id: folder.id, name: folder.name }]);
     this.load();
@@ -49,6 +50,7 @@ export class FolderPicker {
     this.load();
   }
 
+  // Carga las subcarpetas del nivel actual
   private load(): void {
     this.loading.set(true);
     this.error.set('');

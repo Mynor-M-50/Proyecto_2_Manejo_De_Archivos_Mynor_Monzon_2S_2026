@@ -7,6 +7,7 @@ const { getFolderWithAccess } = require('../services/access.service');
 const { assertNameAvailable, rebaseDescendants } = require('../services/folder.service');
 const { logActivity } = require('../services/activity.service');
 
+// Registra en el historial una operacion sobre una carpeta
 function logFolderAction(req, action, folder, details) {
   return logActivity({
     userId: req.user.id,

@@ -17,6 +17,9 @@ router.get('/top-users-by-shares', requireRole('admin'), c.topUsersByShares);
 router.get('/most-shared-files', requireRole('admin'), c.mostSharedFiles);
 
 // Reportes por usuario: el administrador consulta a cualquiera, un usuario solo lo suyo
+// (incluye archivos sin compartir y carpetas con mas archivos)
+router.get('/never-shared-files', c.neverSharedFiles);
+router.get('/folders-most-files', c.foldersMostFiles);
 router.get('/shared-by-user', c.sharedByUser);
 router.get('/shared-with-user', c.sharedWithUser);
 router.get('/user-activity', c.userActivity);

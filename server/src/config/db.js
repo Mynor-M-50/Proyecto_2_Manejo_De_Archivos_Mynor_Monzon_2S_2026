@@ -12,6 +12,7 @@ async function connectDB() {
   console.log('Conectado a MongoDB, base: ' + env.dbName);
 }
 
+// Devuelve el bucket de GridFS (falla si aun no se conecto la base)
 function getBucket() {
   if (!bucket) {
     throw new Error('GridFS no esta inicializado');

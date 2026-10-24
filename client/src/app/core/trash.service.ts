@@ -43,22 +43,27 @@ export class TrashService {
   private readonly http = inject(HttpClient);
   private readonly url = `${API_URL}/trash`;
 
+  // Elementos que el usuario tiene en la papelera
   list() {
     return this.http.get<{ items: TrashItem[] }>(this.url);
   }
 
+  // Restaura un archivo
   restoreFile(id: string) {
     return this.http.post<RestoreFileResult>(`${this.url}/files/${id}/restore`, {});
   }
 
+  // Restaura una carpeta con lo que se elimino junto con ella
   restoreFolder(id: string) {
     return this.http.post<RestoreFolderResult>(`${this.url}/folders/${id}/restore`, {});
   }
 
+  // Elimina un archivo de forma definitiva
   deleteFile(id: string) {
     return this.http.delete<PurgeResult>(`${this.url}/files/${id}`);
   }
 
+  // Elimina una carpeta y su contenido de forma definitiva
   deleteFolder(id: string) {
     return this.http.delete<PurgeResult>(`${this.url}/folders/${id}`);
   }

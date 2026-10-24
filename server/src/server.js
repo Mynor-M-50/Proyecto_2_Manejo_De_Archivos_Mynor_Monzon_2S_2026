@@ -2,6 +2,7 @@ const env = require('./config/env');
 const { connectDB } = require('./config/db');
 const app = require('./app');
 
+// Conecta a la base y levanta el servidor HTTP
 async function start() {
   await connectDB();
   app.listen(env.port, () => {

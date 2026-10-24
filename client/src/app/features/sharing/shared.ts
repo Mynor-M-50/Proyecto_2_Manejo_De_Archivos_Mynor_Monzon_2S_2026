@@ -54,6 +54,7 @@ export class Shared {
     return share.resourceType === 'folder' ? ['/files', share.resourceId] : ['/view', share.resourceId];
   }
 
+  // Cambia el permiso de un recurso que yo comparti
   protected changePermission(share: ShareItem, value: Permission): void {
     if (value === share.permission) {
       return;
@@ -72,10 +73,12 @@ export class Shared {
     });
   }
 
+  // Pide confirmacion antes de retirar el acceso
   protected askRemove(share: ShareItem): void {
     this.confirmingId.set(share.id);
   }
 
+  // Retira el acceso
   protected remove(share: ShareItem): void {
     this.api.remove(share.id).subscribe({
       next: () => {
@@ -98,6 +101,7 @@ export class Shared {
     return list.filter((s) => fields(s).some((text) => text.toLowerCase().includes(term)));
   }
 
+  // Carga lo recibido y lo compartido
   private load(): void {
     this.loading.set(true);
     this.error.set('');

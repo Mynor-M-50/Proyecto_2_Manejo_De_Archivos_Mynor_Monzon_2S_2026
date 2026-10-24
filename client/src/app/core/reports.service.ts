@@ -29,6 +29,7 @@ export class ReportsService {
     return this.http.get<{ reports: CatalogItem[] }>(this.url);
   }
 
+  // Ejecuta un reporte con los filtros indicados
   run(key: string, params: Record<string, string>) {
     return this.http.get<ReportResponse>(`${this.url}/${key}`, { params });
   }

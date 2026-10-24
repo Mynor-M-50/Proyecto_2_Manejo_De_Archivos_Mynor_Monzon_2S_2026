@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
+import { AuthService } from '../../core/auth.service';
 import { errorMessage } from '../../core/errors';
 import { ToastService } from '../../core/toast.service';
 import { RestoreFileResult, RestoreFolderResult, TrashItem, TrashService } from '../../core/trash.service';
@@ -9,10 +10,12 @@ import { Modal } from '../../shared/modal';
 
 type DialogType = 'delete' | 'empty';
 
+// Elige singular o plural segun la cantidad
 function plural(n: number, one: string, many: string): string {
   return n + ' ' + (n === 1 ? one : many);
 }
 
+// Mensaje al restaurar un archivo
 function restoredFileMessage(res: RestoreFileResult): string {
   let message = 'Archivo restaurado';
   if (res.movedToRoot) {
@@ -24,6 +27,7 @@ function restoredFileMessage(res: RestoreFileResult): string {
   return message;
 }
 
+// Mensaje al restaurar una carpeta
 function restoredFolderMessage(res: RestoreFolderResult): string {
   const inside = res.folders - 1 + res.files;
   let message = 'Carpeta restaurada';
@@ -49,6 +53,7 @@ function restoredFolderMessage(res: RestoreFolderResult): string {
 export class Trash {
   private readonly api = inject(TrashService);
   private readonly toast = inject(ToastService);
+  private readonly auth = inject(AuthService);
 
   protected readonly formatSize = formatSize;
 
@@ -84,12 +89,14 @@ export class Trash {
     return parts.length > 0 ? parts.join(' y ') : 'Carpeta vacia';
   }
 
+  // Texto de confirmacion para vaciar la papelera
   protected emptyMessage(): string {
     return 'Se eliminaran de forma definitiva ' + plural(this.items().length, 'elemento', 'elementos') + ' de la papelera, con todo lo que contienen.';
   }
 
   // ---------- Restaurar ----------
 
+  // Restaura el elemento a su lugar original
   protected restore(item: TrashItem): void {
     if (this.restoringId()) {
       return;
@@ -109,12 +116,14 @@ export class Trash {
     }
   }
 
+  // Avisa y recarga la lista tras restaurar
   private afterRestore(message: string): void {
     this.toast.success(message);
     this.restoringId.set(null);
     this.load();
   }
 
+  // Muestra el error de una restauracion fallida
   private restoreFailed(err: unknown): void {
     this.toast.error(errorMessage(err));
     this.restoringId.set(null);
@@ -123,6 +132,7 @@ export class Trash {
 
   // ---------- Eliminar de forma definitiva ----------
 
+  // Pide confirmacion para eliminar definitivamente
   protected askDelete(item: TrashItem): void {
     this.target.set(item);
     this.dialogError.set('');
@@ -130,6 +140,7 @@ export class Trash {
     this.dialog.set('delete');
   }
 
+  // Pide confirmacion para vaciar la papelera
   protected askEmpty(): void {
     this.target.set(null);
     this.dialogError.set('');
@@ -137,6 +148,7 @@ export class Trash {
     this.dialog.set('empty');
   }
 
+  // Cierra el dialogo de confirmacion
   protected closeDialog(): void {
     this.dialog.set(null);
     this.target.set(null);
@@ -144,6 +156,7 @@ export class Trash {
     this.busy.set(false);
   }
 
+  // Elimina definitivamente el elemento elegido
   protected confirmDelete(): void {
     const item = this.target();
     if (!item || this.busy()) {
@@ -153,6 +166,7 @@ export class Trash {
     this.run(request, 'Eliminado de forma definitiva');
   }
 
+  // Elimina todo lo que hay en la papelera
   protected confirmEmpty(): void {
     if (this.busy()) {
       return;
@@ -160,12 +174,14 @@ export class Trash {
     this.run(this.api.empty(), 'Papelera vaciada');
   }
 
+  // Ejecuta una eliminacion y recarga la lista
   private run(request: ReturnType<TrashService['empty']>, okMessage: string): void {
     this.busy.set(true);
     this.dialogError.set('');
     request.subscribe({
       next: () => {
         this.toast.success(okMessage);
+        this.auth.refreshUser();
         this.closeDialog();
         this.load();
       },
@@ -176,6 +192,7 @@ export class Trash {
     });
   }
 
+  // Carga los elementos de la papelera
   private load(): void {
     this.loading.set(true);
     this.error.set('');

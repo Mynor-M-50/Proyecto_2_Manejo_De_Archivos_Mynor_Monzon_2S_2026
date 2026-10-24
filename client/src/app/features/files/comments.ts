@@ -48,6 +48,7 @@ export class Comments {
     return comment.author.id === this.auth.user()?.id || this.access() === 'owner';
   }
 
+  // Envia el comentario escrito
   protected send(): void {
     const text = this.text().trim();
     if (!text || this.sending()) {
@@ -67,10 +68,12 @@ export class Comments {
     });
   }
 
+  // Pide confirmacion antes de borrar
   protected askRemove(comment: CommentItem): void {
     this.confirmingId.set(comment.id);
   }
 
+  // Borra el comentario confirmado
   protected remove(comment: CommentItem): void {
     this.api.remove(this.fileId(), comment.id).subscribe({
       next: () => {
@@ -84,6 +87,7 @@ export class Comments {
     });
   }
 
+  // Carga los comentarios del archivo
   private load(id: string): void {
     this.loading.set(true);
     this.error.set('');

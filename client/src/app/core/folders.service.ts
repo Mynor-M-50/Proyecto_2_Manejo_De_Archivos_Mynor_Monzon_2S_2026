@@ -25,10 +25,12 @@ export class FoldersService {
     );
   }
 
+  // Crea una carpeta en la raiz o dentro de parentId
   create(name: string, parentId?: string) {
     return this.http.post<{ folder: Folder }>(this.url, parentId ? { name, parentId } : { name });
   }
 
+  // Cambia el nombre de la carpeta
   rename(id: string, name: string) {
     return this.http.patch<{ folder: Folder }>(`${this.url}/${id}/rename`, { name });
   }

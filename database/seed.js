@@ -27,6 +27,9 @@ const rand = mulberry32(2026);
 const randInt = (min, max) => Math.floor(rand() * (max - min + 1)) + min;
 const pick = (arr) => arr[Math.floor(rand() * arr.length)];
 
+// Espacio asignado a cada usuario (50 MB)
+const DEFAULT_QUOTA = 50 * 1024 * 1024;
+
 const DAY = 24 * 60 * 60 * 1000;
 const NOW = Date.now();
 const daysAgo = (n) => new Date(NOW - n * DAY);
@@ -58,6 +61,7 @@ const folderDefs = [
   { key: 'archivo_viejo', owner: 'luis', name: 'Archivo viejo', parent: null, deleted: true },
 ];
 
+// Atajo para declarar un archivo de la carga inicial
 const F = (owner, folder, name, deleted) => ({ owner, folder, name, deleted: !!deleted });
 
 const fileDefs = [
@@ -125,7 +129,7 @@ const frases = [
   'Los plazos acordados deben cumplirse segun el calendario establecido.',
   'Se detallan los puntos principales tratados en la ultima reunion de trabajo.',
   'Las observaciones pendientes se resolveran durante la siguiente semana.',
-  'Este texto es un contenido de ejemplo generado para la carga inicial del sistema.',
+  'Este archivo se incluye en la carga inicial para probar el sistema.',
   'Los responsables deben confirmar la recepcion de este documento.',
 ];
 
@@ -145,6 +149,7 @@ const commentTexts = [
   'Buen avance, gracias por compartirlo.',
 ];
 
+// Texto de ejemplo del archivo: Markdown con titulos y lista, o texto plano
 function buildContent(name, ext, ownerName) {
   const base = name.replace(/\.(txt|md)$/, '').replace(/_/g, ' ');
   const title = base.charAt(0).toUpperCase() + base.slice(1);
@@ -163,6 +168,7 @@ function buildContent(name, ext, ownerName) {
   return title.toUpperCase() + '\nAutor: ' + ownerName + '\n\n' + parrafos.join('\n\n') + '\n';
 }
 
+// Sube un Buffer a GridFS y devuelve el id del archivo guardado
 async function uploadToGridFS(bucket, filename, buffer, metadata) {
   const stream = bucket.openUploadStream(filename, { metadata });
   stream.end(buffer);
@@ -196,6 +202,7 @@ async function main() {
         role: u.role,
         active: true,
         storageUsed: 0,
+        storageQuota: DEFAULT_QUOTA,
         createdAt,
         updatedAt: createdAt,
       };
@@ -267,6 +274,7 @@ async function main() {
     const shareEntries = [];
     let permCounter = 0;
 
+    // Crea una comparticion rotando los permisos read, edit y comment
     function addShare(ownerKey, targetKey, resourceType, resource) {
       const createdAt = randomDateBetween(resource.createdAt, daysAgo(1));
       const permission = permissions[permCounter % 3];
@@ -300,6 +308,7 @@ async function main() {
 
     // Historial de actividad
     const logList = [];
+    // Agrega una entrada al historial de actividad
     function addLog(userId, action, resourceType, resourceId, resourceName, createdAt, details) {
       logList.push({
         _id: new ObjectId(),

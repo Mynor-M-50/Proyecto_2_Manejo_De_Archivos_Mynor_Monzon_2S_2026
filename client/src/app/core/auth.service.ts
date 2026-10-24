@@ -19,6 +19,7 @@ export class AuthService {
   readonly isLoggedIn = computed(() => !!this.token() && !!this.user());
   readonly isAdmin = computed(() => this.user()?.role === 'admin');
 
+  // Inicia sesion y guarda el token y el usuario
   login(email: string, password: string): Observable<User> {
     return this.http.post<LoginResponse>(`${API_URL}/auth/login`, { email, password }).pipe(
       tap((res) => {
@@ -41,6 +42,12 @@ export class AuthService {
     );
   }
 
+  // Vuelve a pedir los datos del usuario para actualizar el espacio usado
+  refreshUser(): void {
+    this.restoreSession().subscribe();
+  }
+
+  // Cierra la sesion y, por defecto, vuelve a la pantalla de login
   logout(redirect = true): void {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
@@ -51,11 +58,13 @@ export class AuthService {
     }
   }
 
+  // Guarda el usuario en memoria y en el navegador
   private storeUser(user: User): void {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
     this.user.set(user);
   }
 
+  // Lee el usuario guardado; si el dato esta danado devuelve null
   private readStoredUser(): User | null {
     try {
       const raw = localStorage.getItem(USER_KEY);

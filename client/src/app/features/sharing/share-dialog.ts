@@ -46,6 +46,7 @@ export class ShareDialog {
     });
   }
 
+  // Comparte el recurso con el correo escrito
   protected add(): void {
     if (this.adding()) {
       return;
@@ -83,6 +84,7 @@ export class ShareDialog {
       });
   }
 
+  // Cambia el permiso de un usuario
   protected changePermission(share: ShareItem, value: Permission): void {
     if (value === share.permission) {
       return;
@@ -101,10 +103,12 @@ export class ShareDialog {
     });
   }
 
+  // Pide confirmacion antes de retirar el acceso
   protected askRemove(share: ShareItem): void {
     this.confirmingId.set(share.id);
   }
 
+  // Retira el acceso al usuario
   protected remove(share: ShareItem): void {
     this.api.remove(share.id).subscribe({
       next: () => {
@@ -119,6 +123,7 @@ export class ShareDialog {
     });
   }
 
+  // Carga con quien esta compartido el recurso
   private load(): void {
     this.loading.set(true);
     this.error.set('');

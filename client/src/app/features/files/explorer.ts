@@ -18,6 +18,7 @@ import {
   switchMap,
   tap,
 } from 'rxjs';
+import { AuthService } from '../../core/auth.service';
 import { errorMessage } from '../../core/errors';
 import { FilesService } from '../../core/files.service';
 import { FoldersService } from '../../core/folders.service';
@@ -65,6 +66,7 @@ export class Explorer {
   private readonly filesApi = inject(FilesService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
 
   // Llega desde la ruta /files/:folderId (sin valor = raiz)
   readonly folderId = input<string>();
@@ -152,6 +154,7 @@ export class Explorer {
 
   // ---------- Carga de datos ----------
 
+  // Pide al servidor las carpetas y archivos de la vista actual
   private fetch(): Observable<View> {
     const filters = {
       ext: this.extFilter(),
@@ -198,6 +201,7 @@ export class Explorer {
     );
   }
 
+  // Guarda en pantalla el resultado de la consulta
   private apply(view: View): void {
     this.folders.set(view.folders);
     this.files.set(view.files);
@@ -207,6 +211,7 @@ export class Explorer {
     this.loading.set(false);
   }
 
+  // Avisa del error y vuelve a la raiz si la carpeta no se pudo abrir
   private onLoadError(err: unknown): Observable<never> {
     this.loading.set(false);
     this.toast.error(errorMessage(err));
@@ -219,26 +224,31 @@ export class Explorer {
 
   // ---------- Busqueda y filtros ----------
 
+  // Actualiza el texto de busqueda y recarga
   protected onSearch(value: string): void {
     this.searchTerm.set(value);
     this.search$.next();
   }
 
+  // Quita la busqueda
   protected clearSearch(): void {
     this.searchTerm.set('');
     this.reload$.next();
   }
 
+  // Filtra por tipo de archivo
   protected onExt(value: string): void {
     this.extFilter.set(value);
     this.reload$.next();
   }
 
+  // Cambia el campo de orden
   protected onSort(value: string): void {
     this.sortField.set(value);
     this.reload$.next();
   }
 
+  // Alterna entre orden ascendente y descendente
   protected toggleOrder(): void {
     this.sortOrder.update((order) => (order === 'asc' ? 'desc' : 'asc'));
     this.reload$.next();
@@ -246,20 +256,24 @@ export class Explorer {
 
   // ---------- Ventanas emergentes ----------
 
+  // Convierte una carpeta en fila de la tabla
   protected folderEntry(folder: Folder): Entry {
     return { kind: 'folder', folder };
   }
 
+  // Convierte un archivo en fila de la tabla
   protected fileEntry(file: FileItem): Entry {
     return { kind: 'file', file };
   }
 
+  // Abre el dialogo para crear carpeta
   protected openNewFolder(): void {
     this.resetDialog();
     this.dialogName.set('');
     this.dialogType.set('newFolder');
   }
 
+  // Abre el dialogo para renombrar
   protected askRename(entry: Entry): void {
     this.resetDialog();
     this.target.set(entry);
@@ -267,22 +281,26 @@ export class Explorer {
     this.dialogType.set('rename');
   }
 
+  // Pide confirmacion para enviar a la papelera
   protected askDelete(entry: Entry): void {
     this.resetDialog();
     this.target.set(entry);
     this.dialogType.set('delete');
   }
 
+  // Abre el selector de carpeta destino
   protected askMove(entry: Entry): void {
     this.resetDialog();
     this.target.set(entry);
     this.dialogType.set('move');
   }
 
+  // Abre el dialogo de compartir
   protected openShare(entry: Entry): void {
     this.shareTarget.set(entry);
   }
 
+  // Cierra cualquier dialogo abierto
   protected closeDialog(): void {
     this.dialogType.set(null);
     this.target.set(null);
@@ -290,11 +308,13 @@ export class Explorer {
     this.busy.set(false);
   }
 
+  // Limpia el estado de los dialogos
   private resetDialog(): void {
     this.dialogError.set('');
     this.busy.set(false);
   }
 
+  // Crea la carpeta con el nombre escrito
   protected confirmNewFolder(): void {
     const name = this.dialogName().trim();
     if (!name) {
@@ -304,6 +324,7 @@ export class Explorer {
     this.runAction(this.foldersApi.create(name, this.folderId()), 'Carpeta creada');
   }
 
+  // Guarda el nuevo nombre
   protected confirmRename(): void {
     const entry = this.target();
     const name = this.dialogName().trim();
@@ -321,6 +342,7 @@ export class Explorer {
     this.runAction(request, 'Nombre actualizado');
   }
 
+  // Envia el elemento a la papelera
   protected confirmDelete(): void {
     const entry = this.target();
     if (!entry) {
@@ -333,6 +355,7 @@ export class Explorer {
     this.runAction(request, 'Enviado a la papelera');
   }
 
+  // Mueve el elemento a la carpeta elegida (null = raiz)
   protected confirmMove(destinationId: string | null): void {
     const entry = this.target();
     if (!entry) {
@@ -367,6 +390,7 @@ export class Explorer {
 
   // ---------- Descarga ----------
 
+  // Descarga el archivo en el equipo
   protected download(file: FileItem): void {
     this.filesApi.download(file.id).subscribe({
       next: (blob) => saveBlob(blob, file.name),
@@ -376,6 +400,7 @@ export class Explorer {
 
   // ---------- Subida ----------
 
+  // Sube los archivos elegidos con el selector
   protected onFilesSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const list = input.files ? Array.from(input.files) : [];
@@ -383,6 +408,7 @@ export class Explorer {
     this.uploadFiles(list);
   }
 
+  // Muestra la zona de soltar archivos
   protected onDragEnter(event: DragEvent): void {
     if (!this.canUpload() || !event.dataTransfer?.types.includes('Files')) {
       return;
@@ -392,12 +418,14 @@ export class Explorer {
     this.dragging.set(true);
   }
 
+  // Permite soltar archivos sobre la pantalla
   protected onDragOver(event: DragEvent): void {
     if (this.canUpload()) {
       event.preventDefault();
     }
   }
 
+  // Oculta la zona de soltar al salir
   protected onDragLeave(): void {
     if (this.dragDepth > 0) {
       this.dragDepth--;
@@ -407,6 +435,7 @@ export class Explorer {
     }
   }
 
+  // Sube los archivos soltados
   protected onDrop(event: DragEvent): void {
     // Siempre se evita que el navegador abra el archivo soltado
     event.preventDefault();
@@ -460,6 +489,7 @@ export class Explorer {
           if (uploaded > 0) {
             this.toast.success(uploaded === 1 ? 'Archivo subido' : uploaded + ' archivos subidos');
           }
+          this.auth.refreshUser();
           this.reload$.next();
         })
       )

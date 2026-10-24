@@ -18,6 +18,8 @@ const CATALOG = [
   { key: 'top-users-by-files', group: 'Usuarios', title: 'Usuarios con mayor cantidad de archivos', adminOnly: true, params: ['limit', 'includeTrash'] },
   { key: 'top-users-by-shares', group: 'Usuarios', title: 'Usuarios con mayor cantidad de recursos compartidos', adminOnly: true, params: ['limit'] },
   { key: 'most-shared-files', group: 'Comparticion', title: 'Archivos compartidos con mayor cantidad de usuarios', adminOnly: true, params: ['limit'] },
+  { key: 'never-shared-files', group: 'Archivos y almacenamiento', title: 'Archivos que nunca han sido compartidos', adminOnly: false, params: ['userId', 'limit'] },
+  { key: 'folders-most-files', group: 'Archivos y almacenamiento', title: 'Carpetas con mayor cantidad de archivos', adminOnly: false, params: ['userId', 'limit'] },
   { key: 'shared-by-user', group: 'Comparticion', title: 'Recursos compartidos por un usuario', adminOnly: false, params: ['userId', 'from', 'to', 'permission', 'resourceType'] },
   { key: 'shared-with-user', group: 'Comparticion', title: 'Recursos recibidos por un usuario', adminOnly: false, params: ['userId', 'from', 'to', 'permission', 'resourceType'] },
   { key: 'user-activity', group: 'Actividad', title: 'Historial de actividad de un usuario', adminOnly: false, params: ['userId', 'from', 'to', 'action', 'limit'] },
@@ -26,10 +28,12 @@ const CATALOG = [
   { key: 'top-actions', group: 'Actividad', title: 'Principales acciones del sistema', adminOnly: false, params: ['userId', 'from', 'to', 'limit'] },
 ];
 
+// Indica si quien hace la peticion es administrador
 function isAdmin(req) {
   return req.user.role === 'admin';
 }
 
+// Id del usuario autenticado como ObjectId (las agregaciones no lo convierten solas)
 function selfId(req) {
   return new mongoose.Types.ObjectId(String(req.user.id));
 }
@@ -69,11 +73,13 @@ const catalog = asyncHandler(async (req, res) => {
 
 // ---------- Solo administrador ----------
 
+// GET /api/reports/files-by-type
 const filesByType = asyncHandler(async (req, res) => {
   const items = await reports.filesByType({ includeTrash: parseBoolean(req.query.includeTrash) });
   res.json({ items });
 });
 
+// GET /api/reports/files-by-date?from=&to=&ownerId=&ext=
 const filesByDate = asyncHandler(async (req, res) => {
   const result = await reports.filesByDate({
     dateFilter: buildDateFilter(req.query),
@@ -85,6 +91,7 @@ const filesByDate = asyncHandler(async (req, res) => {
   res.json(result);
 });
 
+// GET /api/reports/files-most-operations
 const filesMostOperations = asyncHandler(async (req, res) => {
   const items = await reports.filesMostOperations({
     dateFilter: buildDateFilter(req.query),
@@ -93,6 +100,7 @@ const filesMostOperations = asyncHandler(async (req, res) => {
   res.json({ items });
 });
 
+// GET /api/reports/top-users-by-files
 const topUsersByFiles = asyncHandler(async (req, res) => {
   const items = await reports.topUsersByFiles({
     limit: parseLimit(req.query.limit, 10, 100),
@@ -101,18 +109,39 @@ const topUsersByFiles = asyncHandler(async (req, res) => {
   res.json({ items });
 });
 
+// GET /api/reports/top-users-by-shares
 const topUsersByShares = asyncHandler(async (req, res) => {
   const items = await reports.topUsersByShares({ limit: parseLimit(req.query.limit, 10, 100) });
   res.json({ items });
 });
 
+// GET /api/reports/most-shared-files
 const mostSharedFiles = asyncHandler(async (req, res) => {
   const items = await reports.mostSharedFiles({ limit: parseLimit(req.query.limit, 10, 100) });
   res.json({ items });
 });
 
+// Archivos que nunca se han compartido (el administrador ve todos, un usuario solo los suyos)
+const neverSharedFiles = asyncHandler(async (req, res) => {
+  const result = await reports.neverSharedFiles({
+    ownerId: optionalUserId(req),
+    limit: parseLimit(req.query.limit, 100, 1000),
+  });
+  res.json(result);
+});
+
+// Carpetas con mas archivos (el administrador ve todas, un usuario solo las suyas)
+const foldersMostFiles = asyncHandler(async (req, res) => {
+  const items = await reports.foldersMostFiles({
+    ownerId: optionalUserId(req),
+    limit: parseLimit(req.query.limit, 10, 100),
+  });
+  res.json({ items });
+});
+
 // ---------- Administrador (cualquier usuario) o usuario (solo el suyo) ----------
 
+// Arma el controlador de los reportes de comparticion: 'by' = compartidos, 'with' = recibidos
 function sharesReport(side) {
   return asyncHandler(async (req, res) => {
     const userId = targetUserId(req);
@@ -130,6 +159,7 @@ function sharesReport(side) {
 const sharedByUser = sharesReport('by');
 const sharedWithUser = sharesReport('with');
 
+// GET /api/reports/user-activity?userId=&from=&to=&action=
 const userActivity = asyncHandler(async (req, res) => {
   const userId = targetUserId(req);
   const result = await reports.userActivity({
@@ -141,6 +171,7 @@ const userActivity = asyncHandler(async (req, res) => {
   res.json({ userId, ...result });
 });
 
+// GET /api/reports/operations-by-type
 const operationsByType = asyncHandler(async (req, res) => {
   const items = await reports.operationsByType({
     userId: optionalUserId(req),
@@ -149,6 +180,7 @@ const operationsByType = asyncHandler(async (req, res) => {
   res.json({ total: items.reduce((sum, i) => sum + i.count, 0), items });
 });
 
+// GET /api/reports/operations-by-period?period=day|week|month
 const operationsByPeriod = asyncHandler(async (req, res) => {
   const period = parseEnum(req.query.period, PERIODS, 'period') || 'day';
   const items = await reports.operationsByPeriod({
@@ -159,6 +191,7 @@ const operationsByPeriod = asyncHandler(async (req, res) => {
   res.json({ period, total: items.reduce((sum, i) => sum + i.count, 0), items });
 });
 
+// GET /api/reports/top-actions
 const topActions = asyncHandler(async (req, res) => {
   const result = await reports.topActions({
     userId: optionalUserId(req),
@@ -173,6 +206,8 @@ module.exports = {
   filesByType,
   filesByDate,
   filesMostOperations,
+  neverSharedFiles,
+  foldersMostFiles,
   topUsersByFiles,
   topUsersByShares,
   mostSharedFiles,

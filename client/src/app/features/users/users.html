@@ -49,7 +49,7 @@
             <th>Correo</th>
             <th>Rol</th>
             <th>Estado</th>
-            <th>Espacio usado</th>
+            <th>Espacio usado / asignado</th>
             <th>Creado</th>
             <th class="right">Acciones</th>
           </tr>
@@ -72,7 +72,7 @@
               <td>
                 <span class="chip" [class.chip-ok]="u.active">{{ u.active ? 'Activo' : 'Inactivo' }}</span>
               </td>
-              <td class="muted">{{ formatSize(u.storageUsed) }}</td>
+              <td class="muted">{{ formatSize(u.storageUsed) }} / {{ formatSize(u.storageQuota) }}</td>
               <td class="muted">{{ u.createdAt | date: 'dd/MM/yyyy' }}</td>
               <td class="right">
                 <button class="btn-icon" type="button" title="Editar" (click)="openEdit(u)">
@@ -129,6 +129,7 @@
             type="email"
             name="email"
             autocomplete="off"
+            maxlength="254"
             [disabled]="!isCreate()"
             [ngModel]="formEmail()"
             (ngModelChange)="formEmail.set($event)"
@@ -176,6 +177,20 @@
           @if (editingSelf()) {
             <small class="muted">No puedes quitarte el rol de administrador a ti mismo.</small>
           }
+        </label>
+
+        <label class="field">
+          <span>Espacio asignado (MB)</span>
+          <input
+            class="input"
+            type="number"
+            name="quota"
+            min="1"
+            max="10240"
+            step="1"
+            [ngModel]="formQuotaMb()"
+            (ngModelChange)="formQuotaMb.set($event)"
+          />
         </label>
 
         @if (formError()) {

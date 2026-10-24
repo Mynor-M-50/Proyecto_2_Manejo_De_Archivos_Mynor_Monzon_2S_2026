@@ -15,6 +15,7 @@ export class UsersService {
   private readonly http = inject(HttpClient);
   private readonly url = `${API_URL}/users`;
 
+  // Lista usuarios con los filtros indicados (los vacios se ignoran)
   list(filters: UserFilters = {}) {
     const params: Record<string, string> = {};
     for (const [key, value] of Object.entries(filters)) {
@@ -25,12 +26,13 @@ export class UsersService {
     return this.http.get<{ users: User[] }>(this.url, { params });
   }
 
-  create(body: { name: string; email: string; password: string; role: Role }) {
+  // Crea un usuario nuevo
+  create(body: { name: string; email: string; password: string; role: Role; storageQuota?: number }) {
     return this.http.post<{ user: User }>(this.url, body);
   }
 
   // Solo se envian los campos que cambiaron
-  update(id: string, body: { name?: string; role?: Role; password?: string }) {
+  update(id: string, body: { name?: string; role?: Role; password?: string; storageQuota?: number }) {
     return this.http.put<{ user: User }>(`${this.url}/${id}`, body);
   }
 

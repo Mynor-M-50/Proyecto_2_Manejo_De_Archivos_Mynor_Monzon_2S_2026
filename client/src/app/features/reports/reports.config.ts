@@ -42,6 +42,7 @@ const statusLabel = (status: string): string => STATUS_LABELS[status] ?? status;
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 
+// Fecha y hora como dd/mm/aaaa hh:mm
 export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) {
     return '';
@@ -218,6 +219,32 @@ export const REPORTS: Record<string, ReportDef> = {
       { header: 'Estado', value: (r) => statusLabel(r.status) },
     ],
     bar: { header: 'Comparacion', value: (r) => r.users },
+  },
+
+  'never-shared-files': {
+    filename: 'archivos-nunca-compartidos',
+    userMode: 'optional',
+    limit: { default: 100, max: 1000 },
+    columns: [
+      { header: 'Archivo', value: (r) => r.name },
+      { header: 'Propietario', value: (r) => r.owner ?? '' },
+      { header: 'Tamano', value: (r) => formatSize(r.size), align: 'right' },
+      { header: 'Almacenado', value: (r) => formatDateTime(r.createdAt) },
+    ],
+    summary: (res) => 'Archivos que nunca se han compartido: ' + (res.total ?? res.items.length) + shownOf(res),
+  },
+
+  'folders-most-files': {
+    filename: 'carpetas-con-mas-archivos',
+    userMode: 'optional',
+    limit: { default: 10, max: 100 },
+    columns: [
+      { header: 'Carpeta', value: (r) => r.name },
+      { header: 'Propietario', value: (r) => r.owner ?? '' },
+      { header: 'Archivos', value: (r) => r.files, align: 'right' },
+      { header: 'Espacio ocupado', value: (r) => formatSize(r.totalSize), align: 'right' },
+    ],
+    bar: { header: 'Comparacion', value: (r) => r.files },
   },
 
   'shared-by-user': {

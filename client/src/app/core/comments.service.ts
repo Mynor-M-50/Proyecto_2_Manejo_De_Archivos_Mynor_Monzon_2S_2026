@@ -15,14 +15,17 @@ export interface CommentItem {
 export class CommentsService {
   private readonly http = inject(HttpClient);
 
+  // Comentarios de un archivo
   list(fileId: string) {
     return this.http.get<{ comments: CommentItem[] }>(`${API_URL}/files/${fileId}/comments`);
   }
 
+  // Agrega un comentario al archivo
   create(fileId: string, text: string) {
     return this.http.post<{ comment: CommentItem }>(`${API_URL}/files/${fileId}/comments`, { text });
   }
 
+  // Borra un comentario (autor o propietario)
   remove(fileId: string, commentId: string) {
     return this.http.delete<{ message: string }>(`${API_URL}/files/${fileId}/comments/${commentId}`);
   }

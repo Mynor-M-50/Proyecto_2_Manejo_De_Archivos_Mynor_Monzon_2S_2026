@@ -13,6 +13,7 @@ const { uniqueFolderName, rebaseDescendants } = require('../services/folder.serv
 const { purgeFiles, purgeFolderIds, purgeFolderTree } = require('../services/purge.service');
 const { logActivity } = require('../services/activity.service');
 
+// Registra en el historial una operacion de papelera
 function logAction(req, action, resourceType, resource, details) {
   return logActivity({
     userId: req.user.id,

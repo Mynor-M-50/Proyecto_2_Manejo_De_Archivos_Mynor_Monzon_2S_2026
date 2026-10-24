@@ -21,6 +21,7 @@ function parseObjectId(value, label) {
   return new mongoose.Types.ObjectId(value);
 }
 
+// 'true' o '1' es verdadero; cualquier otro valor, falso
 function parseBoolean(value) {
   return value === 'true' || value === '1';
 }

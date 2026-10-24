@@ -21,10 +21,12 @@ export class Login {
   protected readonly loading = signal(false);
   protected readonly error = signal('');
 
+  // Muestra u oculta la contrasena
   protected togglePassword(): void {
     this.showPassword.update((visible) => !visible);
   }
 
+  // Valida los campos e inicia sesion
   protected submit(): void {
     if (this.loading()) {
       return;

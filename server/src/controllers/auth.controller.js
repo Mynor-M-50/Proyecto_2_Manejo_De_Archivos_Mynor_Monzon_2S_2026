@@ -10,12 +10,12 @@ const { logActivity } = require('../services/activity.service');
 // POST /api/auth/login
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body || {};
-  if (!email || !password) {
+  if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !password) {
     throw new AppError('Correo y contrasena son obligatorios', 400);
   }
 
-  const user = await User.findOne({ email: String(email).toLowerCase().trim() });
-  const passwordOk = user && (await bcrypt.compare(String(password), user.passwordHash));
+  const user = await User.findOne({ email: email.toLowerCase().trim() });
+  const passwordOk = user && (await bcrypt.compare(password, user.passwordHash));
   if (!passwordOk) {
     throw new AppError('Credenciales invalidas', 401);
   }

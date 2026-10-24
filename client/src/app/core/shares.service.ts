@@ -33,6 +33,7 @@ export const PERMISSIONS: PermissionOption[] = [
   },
 ];
 
+// Texto en espanol de cada permiso
 export function permissionLabel(permission: Permission): string {
   return PERMISSIONS.find((p) => p.value === permission)?.label ?? permission;
 }
@@ -48,22 +49,27 @@ export class SharesService {
     return this.http.get<{ shares: ShareItem[] }>(this.url, { params: { resourceType, resourceId } });
   }
 
+  // Lo que yo comparti
   byMe() {
     return this.http.get<{ shares: ShareItem[] }>(`${this.url}/by-me`);
   }
 
+  // Lo que otros compartieron conmigo
   withMe() {
     return this.http.get<{ shares: ShareItem[] }>(`${this.url}/with-me`);
   }
 
+  // Comparte un recurso con otro usuario por su correo
   create(body: { resourceType: ResourceType; resourceId: string; email: string; permission: Permission }) {
     return this.http.post<{ share: ShareItem }>(this.url, body);
   }
 
+  // Cambia el permiso otorgado
   update(id: string, permission: Permission) {
     return this.http.patch<{ share: ShareItem | null }>(`${this.url}/${id}`, { permission });
   }
 
+  // Retira el permiso
   remove(id: string) {
     return this.http.delete<{ message: string }>(`${this.url}/${id}`);
   }

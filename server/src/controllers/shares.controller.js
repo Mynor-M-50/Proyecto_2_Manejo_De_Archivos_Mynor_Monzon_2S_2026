@@ -4,11 +4,13 @@ const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const { getFileWithAccess, getFolderWithAccess } = require('../services/access.service');
 const { buildShareViews, findResourceAnyState } = require('../services/share.service');
+const { cleanEmail } = require('../utils/validators');
 const { logActivity } = require('../services/activity.service');
 
 const RESOURCE_TYPES = ['file', 'folder'];
 const PERMISSIONS = ['read', 'comment', 'edit'];
 
+// Registra en el historial una operacion de comparticion
 function logShareAction(req, action, resourceType, resource, details) {
   return logActivity({
     userId: req.user.id,
@@ -53,13 +55,11 @@ const createShare = asyncHandler(async (req, res) => {
   if (!PERMISSIONS.includes(permission)) {
     throw new AppError('permission debe ser read, comment o edit', 400);
   }
-  if (!email || typeof email !== 'string') {
-    throw new AppError('El correo del usuario es obligatorio', 400);
-  }
+  const targetEmail = cleanEmail(email);
 
   const resource = await getOwnedResource(resourceType, resourceId, req.user.id);
 
-  const target = await User.findOne({ email: email.toLowerCase().trim() });
+  const target = await User.findOne({ email: targetEmail });
   if (!target) {
     throw new AppError('No existe un usuario con ese correo', 404);
   }

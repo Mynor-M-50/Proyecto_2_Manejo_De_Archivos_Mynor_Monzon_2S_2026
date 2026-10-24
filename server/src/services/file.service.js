@@ -2,6 +2,7 @@ const File = require('../models/File');
 const User = require('../models/User');
 const AppError = require('../utils/AppError');
 const escapeRegex = require('../utils/escapeRegex');
+const env = require('../config/env');
 
 // Indica si ya existe un archivo activo con ese nombre en la misma ubicacion
 async function fileNameTaken(ownerId, folderId, name, excludeId) {
@@ -48,6 +49,21 @@ async function uniqueFileName(ownerId, folderId, name, excludeId) {
   return candidate;
 }
 
+// Verifica que el propietario tenga espacio disponible para guardar extraBytes mas
+async function assertQuotaAvailable(ownerId, extraBytes) {
+  if (extraBytes <= 0) {
+    return;
+  }
+  const owner = await User.findById(ownerId).select('storageUsed storageQuota');
+  if (!owner) {
+    throw new AppError('Propietario no encontrado', 404);
+  }
+  const quota = owner.storageQuota || env.defaultQuota;
+  if (owner.storageUsed + extraBytes > quota) {
+    throw new AppError('No hay espacio suficiente: se superaria el espacio asignado al propietario', 413);
+  }
+}
+
 // Suma o resta bytes al espacio usado del propietario
 async function adjustStorage(ownerId, delta) {
   if (!delta) {
@@ -60,4 +76,4 @@ async function adjustStorage(ownerId, delta) {
   }
 }
 
-module.exports = { assertFileNameAvailable, uniqueFileName, adjustStorage };
+module.exports = { assertFileNameAvailable, uniqueFileName, assertQuotaAvailable, adjustStorage };

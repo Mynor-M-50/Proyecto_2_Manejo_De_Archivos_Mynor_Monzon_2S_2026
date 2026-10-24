@@ -6,12 +6,13 @@ const { serializeFile } = require('../utils/serializers');
 const { MAX_FILE_SIZE } = require('../utils/upload');
 const { ALLOWED_EXTENSIONS, parseFileName, fixFilename, assertTextBuffer } = require('../utils/files');
 const { getFolderWithAccess, getFileWithAccess } = require('../services/access.service');
-const { assertFileNameAvailable, adjustStorage } = require('../services/file.service');
+const { assertFileNameAvailable, assertQuotaAvailable, adjustStorage } = require('../services/file.service');
 const { saveBuffer, openDownload, readBuffer, removeContent } = require('../services/gridfs.service');
 const { logActivity } = require('../services/activity.service');
 
 const SORT_FIELDS = { name: 'name', createdAt: 'createdAt', updatedAt: 'updatedAt', size: 'size' };
 
+// Registra en el historial una operacion sobre un archivo
 function logFileAction(req, action, file, details) {
   return logActivity({
     userId: req.user.id,
@@ -45,6 +46,7 @@ const uploadFile = asyncHandler(async (req, res) => {
   await assertFileNameAvailable(ownerId, folder ? folder._id : null, name);
 
   const size = req.file.buffer.length;
+  await assertQuotaAvailable(ownerId, size);
   const gridfsId = await saveBuffer(name, req.file.buffer, { ownerId, ext, mimeType });
 
   let file;
@@ -162,6 +164,7 @@ const updateContent = asyncHandler(async (req, res) => {
     throw new AppError('El contenido supera el tamano maximo de 5 MB', 413);
   }
   assertTextBuffer(buffer);
+  await assertQuotaAvailable(file.ownerId, buffer.length - file.size);
 
   const oldGridfsId = file.gridfsId;
   const oldSize = file.size;

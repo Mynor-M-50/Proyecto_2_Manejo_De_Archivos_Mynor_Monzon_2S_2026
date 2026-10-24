@@ -16,6 +16,11 @@
 }
 .nav a:hover { background: #eef1f8; text-decoration: none; }
 .nav a.active { background: var(--primary-soft); color: var(--primary-dark); }
+.storage { display: flex; flex-direction: column; gap: 3px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; }
+.storage-head { display: flex; justify-content: space-between; }
+.storage-bar { height: 6px; border-radius: 3px; background: #e6e9f2; overflow: hidden; margin: 2px 0 4px; }
+.storage-bar span { display: block; height: 100%; background: var(--primary); }
+.storage-bar span.full { background: #d64545; }
 .user-box { display: flex; flex-direction: column; gap: 8px; padding: 12px 8px 0; border-top: 1px solid var(--border); }
 .user-info { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
 .content { flex: 1; min-width: 0; }

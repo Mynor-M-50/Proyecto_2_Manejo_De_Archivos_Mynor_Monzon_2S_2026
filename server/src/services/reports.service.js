@@ -8,6 +8,7 @@ const ActivityLog = require('../models/ActivityLog');
 const TIMEZONE = 'America/Guatemala';
 const PERIOD_FORMATS = { day: '%Y-%m-%d', week: '%G-W%V', month: '%Y-%m' };
 
+// Une cada documento con su usuario (campo localField) y lo deja en el arreglo 'as'
 const lookupUser = (localField, as) => ({
   $lookup: { from: 'users', localField, foreignField: '_id', as },
 });
@@ -100,6 +101,67 @@ async function filesMostOperations({ dateFilter, limit }) {
             },
           ],
         },
+      },
+    },
+  ]);
+}
+
+// Archivos activos que nunca se han compartido de forma directa (sin ningun permiso en shares)
+async function neverSharedFiles({ ownerId, limit }) {
+  const match = { deletedAt: null };
+  if (ownerId) match.ownerId = ownerId;
+
+  const [result] = await File.aggregate([
+    { $match: match },
+    { $lookup: { from: 'shares', localField: '_id', foreignField: 'resourceId', as: 'shares' } },
+    { $match: { shares: { $size: 0 } } },
+    {
+      $facet: {
+        total: [{ $count: 'n' }],
+        items: [
+          { $sort: { createdAt: -1 } },
+          { $limit: limit },
+          lookupUser('ownerId', 'owner'),
+          {
+            $project: {
+              _id: 0,
+              id: '$_id',
+              name: 1,
+              ext: 1,
+              size: 1,
+              createdAt: 1,
+              owner: { $arrayElemAt: ['$owner.name', 0] },
+            },
+          },
+        ],
+      },
+    },
+  ]);
+  return { total: result.total.length > 0 ? result.total[0].n : 0, items: result.items };
+}
+
+// Carpetas activas con mayor cantidad de archivos activos (contenido directo de cada carpeta)
+async function foldersMostFiles({ ownerId, limit }) {
+  const match = { deletedAt: null, folderId: { $ne: null } };
+  if (ownerId) match.ownerId = ownerId;
+
+  return File.aggregate([
+    { $match: match },
+    { $group: { _id: '$folderId', files: { $sum: 1 }, totalSize: { $sum: '$size' } } },
+    { $lookup: { from: 'folders', localField: '_id', foreignField: '_id', as: 'folder' } },
+    { $unwind: '$folder' },
+    { $match: { 'folder.deletedAt': null } },
+    { $sort: { files: -1, totalSize: -1, _id: 1 } },
+    { $limit: limit },
+    lookupUser('folder.ownerId', 'owner'),
+    {
+      $project: {
+        _id: 0,
+        folderId: '$_id',
+        name: '$folder.name',
+        owner: { $arrayElemAt: ['$owner.name', 0] },
+        files: 1,
+        totalSize: 1,
       },
     },
   ]);
@@ -250,6 +312,7 @@ async function sharesList({ side, userId, dateFilter, permission, resourceType }
 
 // ---------- Actividad ----------
 
+// Filtro comun del historial: usuario, rango de fechas y accion (todos opcionales)
 function activityMatch({ userId, dateFilter, action }) {
   const match = {};
   if (userId) match.userId = userId;
@@ -342,6 +405,8 @@ module.exports = {
   filesMostOperations,
   topUsersByFiles,
   topUsersByShares,
+  neverSharedFiles,
+  foldersMostFiles,
   mostSharedFiles,
   sharesList,
   userActivity,

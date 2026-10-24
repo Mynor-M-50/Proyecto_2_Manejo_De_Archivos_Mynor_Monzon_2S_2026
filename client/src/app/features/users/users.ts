@@ -15,8 +15,14 @@ import { Modal } from '../../shared/modal';
 
 type DialogType = 'form' | 'deactivate';
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const MIN_PASSWORD = 6;
+const MAX_PASSWORD_BYTES = 72;
+const MAX_NAME = 100;
+const MAX_EMAIL = 254;
+const MB = 1024 * 1024;
+const MIN_QUOTA_MB = 1;
+const MAX_QUOTA_MB = 10240;
 
 // Administracion de usuarios: crear, editar, activar y desactivar (solo administrador)
 @Component({
@@ -48,6 +54,7 @@ export class Users {
   protected readonly formEmail = signal('');
   protected readonly formPassword = signal('');
   protected readonly formRole = signal<Role>('user');
+  protected readonly formQuotaMb = signal(50);
   protected readonly showPassword = signal(false);
   protected readonly formError = signal('');
   protected readonly busy = signal(false);
@@ -91,6 +98,7 @@ export class Users {
     this.reload$.next();
   }
 
+  // Consulta usuarios con los filtros actuales
   private fetch(): Observable<{ users: User[] }> {
     const status = this.status();
     return this.api.list({
@@ -100,22 +108,26 @@ export class Users {
     });
   }
 
+  // Indica si el usuario es quien tiene la sesion abierta
   protected isSelf(user: User): boolean {
     return user.id === this.auth.user()?.id;
   }
 
   // ---------- Filtros ----------
 
+  // Busca por nombre o correo (espera a que se deje de escribir)
   protected onSearch(value: string): void {
     this.search.set(value);
     this.search$.next();
   }
 
+  // Filtra por rol
   protected onRole(value: string): void {
     this.role.set(value);
     this.reload$.next();
   }
 
+  // Filtra por activos o inactivos
   protected onStatus(value: string): void {
     this.status.set(value);
     this.reload$.next();
@@ -123,24 +135,29 @@ export class Users {
 
   // ---------- Crear y editar ----------
 
+  // Abre el formulario de usuario nuevo
   protected openCreate(): void {
     this.editing.set(null);
     this.formName.set('');
     this.formEmail.set('');
     this.formPassword.set('');
     this.formRole.set('user');
+    this.formQuotaMb.set(50);
     this.openForm();
   }
 
+  // Abre el formulario con los datos del usuario
   protected openEdit(user: User): void {
     this.editing.set(user);
     this.formName.set(user.name);
     this.formEmail.set(user.email);
     this.formPassword.set('');
     this.formRole.set(user.role);
+    this.formQuotaMb.set(Math.round(user.storageQuota / MB));
     this.openForm();
   }
 
+  // Reinicia el estado y muestra el formulario
   private openForm(): void {
     this.showPassword.set(false);
     this.formError.set('');
@@ -148,6 +165,7 @@ export class Users {
     this.dialog.set('form');
   }
 
+  // Cierra el dialogo y limpia errores
   protected closeDialog(): void {
     this.dialog.set(null);
     this.editing.set(null);
@@ -156,10 +174,12 @@ export class Users {
     this.busy.set(false);
   }
 
+  // Muestra u oculta la contrasena
   protected togglePassword(): void {
     this.showPassword.update((visible) => !visible);
   }
 
+  // Valida el formulario y crea o actualiza el usuario
   protected submitForm(): void {
     if (this.busy()) {
       return;
@@ -168,15 +188,28 @@ export class Users {
     const email = this.formEmail().trim();
     const password = this.formPassword();
     const role = this.formRole();
+    const quotaMb = Number(this.formQuotaMb());
     const user = this.editing();
 
     if (!name) {
       this.formError.set('El nombre es obligatorio');
       return;
     }
+    if (name.length > MAX_NAME) {
+      this.formError.set('El nombre no puede superar ' + MAX_NAME + ' caracteres');
+      return;
+    }
+    if (!Number.isInteger(quotaMb) || quotaMb < MIN_QUOTA_MB || quotaMb > MAX_QUOTA_MB) {
+      this.formError.set('El espacio asignado debe ser un numero entero de MB entre 1 y ' + MAX_QUOTA_MB);
+      return;
+    }
+    if (password && new TextEncoder().encode(password).length > MAX_PASSWORD_BYTES) {
+      this.formError.set('La contrasena es demasiado larga (maximo ' + MAX_PASSWORD_BYTES + ' bytes)');
+      return;
+    }
 
     if (!user) {
-      if (!EMAIL_REGEX.test(email)) {
+      if (email.length > MAX_EMAIL || !EMAIL_REGEX.test(email)) {
         this.formError.set('El correo no es valido');
         return;
       }
@@ -184,7 +217,7 @@ export class Users {
         this.formError.set('La contrasena debe tener al menos ' + MIN_PASSWORD + ' caracteres');
         return;
       }
-      this.runForm(this.api.create({ name, email, password, role }), 'Usuario creado', false);
+      this.runForm(this.api.create({ name, email, password, role, storageQuota: quotaMb * MB }), 'Usuario creado', false);
       return;
     }
 
@@ -193,7 +226,7 @@ export class Users {
       return;
     }
     // Solo se envia lo que cambio
-    const body: { name?: string; role?: Role; password?: string } = {};
+    const body: { name?: string; role?: Role; password?: string; storageQuota?: number } = {};
     if (name !== user.name) {
       body.name = name;
     }
@@ -203,6 +236,9 @@ export class Users {
     if (password) {
       body.password = password;
     }
+    if (quotaMb * MB !== user.storageQuota) {
+      body.storageQuota = quotaMb * MB;
+    }
     if (Object.keys(body).length === 0) {
       this.formError.set('No hiciste ningun cambio');
       return;
@@ -210,6 +246,7 @@ export class Users {
     this.runForm(this.api.update(user.id, body), 'Usuario actualizado', this.isSelf(user));
   }
 
+  // Envia la peticion del formulario y recarga la lista
   private runForm(request: Observable<unknown>, okMessage: string, refreshSession: boolean): void {
     this.busy.set(true);
     this.formError.set('');
@@ -232,6 +269,7 @@ export class Users {
 
   // ---------- Activar y desactivar ----------
 
+  // Pide confirmacion antes de desactivar
   protected askDeactivate(user: User): void {
     this.target.set(user);
     this.formError.set('');
@@ -239,6 +277,7 @@ export class Users {
     this.dialog.set('deactivate');
   }
 
+  // Desactiva al usuario
   protected confirmDeactivate(): void {
     const user = this.target();
     if (!user || this.busy()) {
@@ -259,6 +298,7 @@ export class Users {
     });
   }
 
+  // Vuelve a activar al usuario
   protected activate(user: User): void {
     this.api.setActive(user.id, true).subscribe({
       next: () => {

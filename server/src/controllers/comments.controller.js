@@ -7,6 +7,7 @@ const { logActivity } = require('../services/activity.service');
 
 const MAX_COMMENT_LENGTH = 1000;
 
+// Datos del comentario con el nombre de su autor
 function serializeComment(comment, users) {
   const author = users.get(String(comment.userId));
   return {
@@ -18,6 +19,7 @@ function serializeComment(comment, users) {
   };
 }
 
+// Registra en el historial una operacion de comentarios (se asocia al archivo)
 function logCommentAction(req, action, file, details) {
   return logActivity({
     userId: req.user.id,

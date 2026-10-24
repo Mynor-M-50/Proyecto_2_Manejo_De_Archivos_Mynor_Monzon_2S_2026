@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { EMPTY, Subject, catchError, forkJoin, switchMap, tap } from 'rxjs';
+import { AuthService } from '../../core/auth.service';
 import { errorMessage } from '../../core/errors';
 import { FilesService } from '../../core/files.service';
 import { Access, FileItem } from '../../core/models';
@@ -38,6 +39,7 @@ export class Viewer {
   private readonly filesApi = inject(FilesService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
   private readonly location = inject(Location);
 
   // Llega desde la ruta /view/:fileId
@@ -109,18 +111,21 @@ export class Viewer {
     });
   }
 
+  // Regresa a la pantalla anterior
   protected back(): void {
     this.location.back();
   }
 
   // ---------- Edicion ----------
 
+  // Pasa a modo edicion con el contenido actual
   protected startEdit(): void {
     this.draft.set(this.content());
     this.saveError.set('');
     this.mode.set('edit');
   }
 
+  // Sale de la edicion (pide confirmar si hay cambios sin guardar)
   protected cancelEdit(): void {
     if (this.dirty()) {
       this.confirmDiscard.set(true);
@@ -129,11 +134,13 @@ export class Viewer {
     this.mode.set('view');
   }
 
+  // Descarta los cambios y vuelve a ver el archivo
   protected discard(): void {
     this.confirmDiscard.set(false);
     this.mode.set('view');
   }
 
+  // Guarda el contenido editado
   protected save(): void {
     const file = this.file();
     if (!file || this.saving()) {
@@ -154,6 +161,7 @@ export class Viewer {
         this.mode.set('view');
         this.saving.set(false);
         this.toast.success('Cambios guardados');
+        this.auth.refreshUser();
       },
       error: (err) => {
         this.saving.set(false);
@@ -179,6 +187,7 @@ export class Viewer {
 
   // ---------- Descargar y eliminar ----------
 
+  // Descarga el archivo en el equipo
   protected download(): void {
     const file = this.file();
     if (!file) {
@@ -190,11 +199,13 @@ export class Viewer {
     });
   }
 
+  // Pide confirmacion para enviar a la papelera
   protected askDelete(): void {
     this.deleteError.set('');
     this.confirmDelete.set(true);
   }
 
+  // Envia el archivo a la papelera
   protected confirmTrash(): void {
     const file = this.file();
     if (!file || this.deleting()) {

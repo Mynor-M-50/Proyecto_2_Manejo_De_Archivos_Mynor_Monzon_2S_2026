@@ -29,6 +29,7 @@ Colecciones de GridFS (las crea el driver): `fs.files`, `fs.chunks`.
 | `role` | string | `admin` o `user` |
 | `active` | boolean | Un usuario inactivo no puede iniciar sesion; no se borra nada |
 | `storageUsed` | number | Bytes de todos sus archivos existentes (incluye papelera) |
+| `storageQuota` | number | Espacio asignado en bytes (50 MB por defecto). Disponible = `storageQuota - storageUsed` |
 | `createdAt`, `updatedAt` | date | |
 
 ### folders
@@ -155,6 +156,10 @@ El indice de texto busca por palabras. Para coincidencias parciales del nombre s
 
 **Usuarios.** Desactivar un usuario pone `active: false`. No se borran sus archivos ni su historial.
 
+**Espacio asignado.** Cada subida o edicion que aumenta el tamano verifica que `storageUsed + bytes` no supere `storageQuota` del propietario del arbol donde se guarda el archivo; si lo supera se responde 413. El administrador puede cambiar la cuota de un usuario, pero no por debajo de lo que ya usa.
+
+**Validaciones de entrada.** Los identificadores deben ser texto de 24 caracteres hexadecimales (evita inyectar operadores como `{"$ne": null}` en las consultas). Correo con formato `usuario@dominio.ext` (maximo 254), nombre de persona y de recurso de maximo 100 caracteres sin caracteres de control, contrasena de 6 caracteres a 72 bytes.
+
 **Nombres.** La unicidad del nombre dentro de una misma carpeta se valida en la aplicacion.
 
 ## 6. Reportes y como los soporta el modelo
@@ -173,6 +178,8 @@ El indice de texto busca por palabras. Para coincidencias parciales del nombre s
 | Operaciones agrupadas por tipo | `activity_logs` | `$group` por `action` |
 | Operaciones agrupadas por periodo | `activity_logs` | `$group` por `$dateToString` (dia o mes) |
 | Principales acciones | `activity_logs` | `$group` por `action`, `$sort`, `$limit` |
+| Archivos que nunca han sido compartidos | `files` | `$match` (activos), `$lookup` a `shares`, `$match` con `$size: 0` |
+| Carpetas con mayor cantidad de archivos | `files` | `$match` (activos con carpeta), `$group` por `folderId`, `$lookup` a `folders`, `$sort`, `$limit` |
 
 ## 7. Datos iniciales
 

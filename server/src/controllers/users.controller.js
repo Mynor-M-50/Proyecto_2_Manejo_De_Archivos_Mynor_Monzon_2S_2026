@@ -4,11 +4,22 @@ const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const escapeRegex = require('../utils/escapeRegex');
 const { serializeUser } = require('../utils/serializers');
+const { cleanPersonName, cleanEmail, cleanPassword } = require('../utils/validators');
 const { logActivity } = require('../services/activity.service');
 
 const ROLES = ['admin', 'user'];
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MIN_PASSWORD = 6;
+const MB = 1024 * 1024;
+const MIN_QUOTA = 1 * MB;
+const MAX_QUOTA = 10 * 1024 * MB;
+
+// Valida el espacio asignado (bytes, entero entre 1 MB y 10 GB)
+function parseQuota(value) {
+  const quota = Number(value);
+  if (!Number.isInteger(quota) || quota < MIN_QUOTA || quota > MAX_QUOTA) {
+    throw new AppError('El espacio asignado debe estar entre 1 MB y 10 GB', 400);
+  }
+  return quota;
+}
 
 // Registra en el historial una accion del administrador sobre un usuario
 function logUserAction(req, action, target, details) {
@@ -47,54 +58,46 @@ const listUsers = asyncHandler(async (req, res) => {
 
 // POST /api/users
 const createUser = asyncHandler(async (req, res) => {
-  const { name, email, password, role } = req.body || {};
+  const { name, email, password, role, storageQuota } = req.body || {};
 
-  if (!name || !String(name).trim()) {
-    throw new AppError('El nombre es obligatorio', 400);
-  }
-  if (!email || !EMAIL_REGEX.test(String(email).trim())) {
-    throw new AppError('El correo no es valido', 400);
-  }
-  if (!password || String(password).length < MIN_PASSWORD) {
-    throw new AppError('La contrasena debe tener al menos ' + MIN_PASSWORD + ' caracteres', 400);
-  }
-  const finalRole = role || 'user';
+  const cleanName = cleanPersonName(name);
+  const normalizedEmail = cleanEmail(email);
+  const cleanPass = cleanPassword(password);
+  const finalRole = role === undefined ? 'user' : role;
   if (!ROLES.includes(finalRole)) {
     throw new AppError('Rol invalido', 400);
   }
+  const quota = storageQuota === undefined ? undefined : parseQuota(storageQuota);
 
-  const normalizedEmail = String(email).toLowerCase().trim();
   const exists = await User.findOne({ email: normalizedEmail });
   if (exists) {
     throw new AppError('Ya existe un usuario con ese correo', 409);
   }
 
   const user = await User.create({
-    name: String(name).trim(),
+    name: cleanName,
     email: normalizedEmail,
-    passwordHash: await bcrypt.hash(String(password), 10),
+    passwordHash: await bcrypt.hash(cleanPass, 10),
     role: finalRole,
+    ...(quota !== undefined && { storageQuota: quota }),
   });
 
   await logUserAction(req, 'user.create', user, { email: user.email, role: user.role });
   res.status(201).json({ user: serializeUser(user) });
 });
 
-// PUT /api/users/:id  (nombre, rol y/o contrasena)
+// PUT /api/users/:id  (nombre, rol, contrasena y/o espacio asignado)
 const updateUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
   if (!user) {
     throw new AppError('Usuario no encontrado', 404);
   }
 
-  const { name, role, password } = req.body || {};
+  const { name, role, password, storageQuota } = req.body || {};
   const changed = [];
 
   if (name !== undefined) {
-    if (!String(name).trim()) {
-      throw new AppError('El nombre no puede estar vacio', 400);
-    }
-    user.name = String(name).trim();
+    user.name = cleanPersonName(name);
     changed.push('name');
   }
 
@@ -111,11 +114,17 @@ const updateUser = asyncHandler(async (req, res) => {
   }
 
   if (password !== undefined) {
-    if (String(password).length < MIN_PASSWORD) {
-      throw new AppError('La contrasena debe tener al menos ' + MIN_PASSWORD + ' caracteres', 400);
-    }
-    user.passwordHash = await bcrypt.hash(String(password), 10);
+    user.passwordHash = await bcrypt.hash(cleanPassword(password), 10);
     changed.push('password');
+  }
+
+  if (storageQuota !== undefined) {
+    const quota = parseQuota(storageQuota);
+    if (quota < user.storageUsed) {
+      throw new AppError('El espacio asignado no puede ser menor al espacio que el usuario ya usa', 400);
+    }
+    user.storageQuota = quota;
+    changed.push('storageQuota');
   }
 
   if (changed.length === 0) {

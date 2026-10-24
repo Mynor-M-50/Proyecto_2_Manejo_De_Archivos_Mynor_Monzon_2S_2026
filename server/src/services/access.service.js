@@ -2,6 +2,7 @@ const Folder = require('../models/Folder');
 const File = require('../models/File');
 const Share = require('../models/Share');
 const AppError = require('../utils/AppError');
+const { parseObjectId } = require('../utils/params');
 
 // Niveles de acceso de menor a mayor. 'owner' es el propietario del recurso.
 // Los permisos compartidos (read, comment, edit) usan el mismo nombre que su nivel.
@@ -66,6 +67,7 @@ async function getFileLevel(file, userId) {
   return { level: highest(permissions), rootId: null };
 }
 
+// Lanza 403 si el usuario no tiene acceso o su nivel es menor al necesario
 function checkLevel(level, needed) {
   if (!level) {
     throw new AppError('No tienes acceso a este recurso', 403);
@@ -77,7 +79,7 @@ function checkLevel(level, needed) {
 
 // Busca una carpeta activa y comprueba que el usuario tenga al menos el nivel pedido
 async function getFolderWithAccess(folderId, userId, needed = 'read') {
-  const folder = await Folder.findOne({ _id: folderId, deletedAt: null });
+  const folder = await Folder.findOne({ _id: parseObjectId(folderId, 'El id de la carpeta'), deletedAt: null });
   if (!folder) {
     throw new AppError('Carpeta no encontrada', 404);
   }
@@ -89,7 +91,7 @@ async function getFolderWithAccess(folderId, userId, needed = 'read') {
 
 // Igual que la anterior pero para archivos
 async function getFileWithAccess(fileId, userId, needed = 'read') {
-  const file = await File.findOne({ _id: fileId, deletedAt: null });
+  const file = await File.findOne({ _id: parseObjectId(fileId, 'El id del archivo'), deletedAt: null });
   if (!file) {
     throw new AppError('Archivo no encontrado', 404);
   }
@@ -101,7 +103,7 @@ async function getFileWithAccess(fileId, userId, needed = 'read') {
 
 // Papelera: solo el propietario puede ver, restaurar o eliminar definitivamente
 async function getTrashedFolder(folderId, userId) {
-  const folder = await Folder.findOne({ _id: folderId, deletedAt: { $ne: null } });
+  const folder = await Folder.findOne({ _id: parseObjectId(folderId, 'El id de la carpeta'), deletedAt: { $ne: null } });
   if (!folder) {
     throw new AppError('La carpeta no esta en la papelera', 404);
   }
@@ -111,8 +113,9 @@ async function getTrashedFolder(folderId, userId) {
   return folder;
 }
 
+// Igual que la anterior pero para archivos
 async function getTrashedFile(fileId, userId) {
-  const file = await File.findOne({ _id: fileId, deletedAt: { $ne: null } });
+  const file = await File.findOne({ _id: parseObjectId(fileId, 'El id del archivo'), deletedAt: { $ne: null } });
   if (!file) {
     throw new AppError('El archivo no esta en la papelera', 404);
   }
