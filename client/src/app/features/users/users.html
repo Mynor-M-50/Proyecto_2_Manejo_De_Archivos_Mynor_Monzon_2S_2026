@@ -1,0 +1,209 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Usuarios</h1>
+      <p class="muted">Crea cuentas y controla quien puede entrar. Desactivar a alguien no borra sus archivos ni su historial.</p>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" type="button" (click)="openCreate()">
+        <app-icon name="users" /> Nuevo usuario
+      </button>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <label class="search">
+      <app-icon name="search" [size]="16" />
+      <input
+        type="search"
+        placeholder="Buscar por nombre o correo"
+        [ngModel]="search()"
+        (ngModelChange)="onSearch($event)"
+      />
+    </label>
+    <select class="input small" aria-label="Filtrar por rol" [ngModel]="role()" (ngModelChange)="onRole($event)">
+      <option value="">Todos los roles</option>
+      <option value="admin">Administradores</option>
+      <option value="user">Usuarios</option>
+    </select>
+    <select class="input small" aria-label="Filtrar por estado" [ngModel]="status()" (ngModelChange)="onStatus($event)">
+      <option value="">Todos los estados</option>
+      <option value="active">Activos</option>
+      <option value="inactive">Inactivos</option>
+    </select>
+  </div>
+
+  @if (error()) {
+    <p class="alert-error" role="alert">{{ error() }}</p>
+  }
+  @if (loading()) {
+    <p class="muted loading">Cargando...</p>
+  }
+
+  @if (users().length > 0) {
+    <div class="card table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Correo</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Espacio usado</th>
+            <th>Creado</th>
+            <th class="right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of users(); track u.id) {
+            <tr [class.inactive]="!u.active">
+              <td>
+                <strong>{{ u.name }}</strong>
+                @if (isSelf(u)) {
+                  <span class="chip">Tu</span>
+                }
+              </td>
+              <td>{{ u.email }}</td>
+              <td>
+                <span class="chip" [class.chip-primary]="u.role === 'admin'">
+                  {{ u.role === 'admin' ? 'Administrador' : 'Usuario' }}
+                </span>
+              </td>
+              <td>
+                <span class="chip" [class.chip-ok]="u.active">{{ u.active ? 'Activo' : 'Inactivo' }}</span>
+              </td>
+              <td class="muted">{{ formatSize(u.storageUsed) }}</td>
+              <td class="muted">{{ u.createdAt | date: 'dd/MM/yyyy' }}</td>
+              <td class="right">
+                <button class="btn-icon" type="button" title="Editar" (click)="openEdit(u)">
+                  <app-icon name="pencil" />
+                </button>
+                @if (u.active) {
+                  <button
+                    class="btn btn-sm"
+                    type="button"
+                    [disabled]="isSelf(u)"
+                    [attr.title]="isSelf(u) ? 'No puedes desactivar tu propia cuenta' : null"
+                    (click)="askDeactivate(u)"
+                  >
+                    Desactivar
+                  </button>
+                } @else {
+                  <button class="btn btn-sm" type="button" (click)="activate(u)">Activar</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else if (!loading() && !error()) {
+    <div class="card empty">
+      <app-icon name="users" [size]="40" />
+      <h2>No se encontraron usuarios</h2>
+      <p class="muted">Prueba con otro nombre o cambia los filtros.</p>
+    </div>
+  }
+</section>
+
+@switch (dialog()) {
+  @case ('form') {
+    <app-modal [title]="isCreate() ? 'Nuevo usuario' : 'Editar usuario'" (closed)="closeDialog()">
+      <form (ngSubmit)="submitForm()">
+        <label class="field">
+          <span>Nombre</span>
+          <input
+            appAutofocus
+            class="input"
+            name="name"
+            maxlength="100"
+            [ngModel]="formName()"
+            (ngModelChange)="formName.set($event)"
+          />
+        </label>
+
+        <label class="field">
+          <span>Correo</span>
+          <input
+            class="input"
+            type="email"
+            name="email"
+            autocomplete="off"
+            [disabled]="!isCreate()"
+            [ngModel]="formEmail()"
+            (ngModelChange)="formEmail.set($event)"
+          />
+          @if (!isCreate()) {
+            <small class="muted">El correo no se puede cambiar.</small>
+          }
+        </label>
+
+        <label class="field">
+          <span>{{ isCreate() ? 'Contrasena' : 'Nueva contrasena (opcional)' }}</span>
+          <div class="password-wrap">
+            <input
+              class="input"
+              name="password"
+              autocomplete="new-password"
+              [type]="showPassword() ? 'text' : 'password'"
+              [placeholder]="isCreate() ? 'Minimo 6 caracteres' : 'Dejala vacia para no cambiarla'"
+              [ngModel]="formPassword()"
+              (ngModelChange)="formPassword.set($event)"
+            />
+            <button
+              class="toggle"
+              type="button"
+              [attr.aria-label]="showPassword() ? 'Ocultar contrasena' : 'Mostrar contrasena'"
+              (click)="togglePassword()"
+            >
+              <app-icon [name]="showPassword() ? 'eye-off' : 'eye'" />
+            </button>
+          </div>
+        </label>
+
+        <label class="field">
+          <span>Rol</span>
+          <select
+            class="input"
+            name="role"
+            [disabled]="editingSelf()"
+            [ngModel]="formRole()"
+            (ngModelChange)="formRole.set($event)"
+          >
+            <option value="user">Usuario</option>
+            <option value="admin">Administrador</option>
+          </select>
+          @if (editingSelf()) {
+            <small class="muted">No puedes quitarte el rol de administrador a ti mismo.</small>
+          }
+        </label>
+
+        @if (formError()) {
+          <p class="alert-error" role="alert">{{ formError() }}</p>
+        }
+        <div class="modal-actions">
+          <button class="btn" type="button" (click)="closeDialog()">Cancelar</button>
+          <button class="btn btn-primary" type="submit" [disabled]="busy()">
+            {{ isCreate() ? 'Crear usuario' : 'Guardar cambios' }}
+          </button>
+        </div>
+      </form>
+    </app-modal>
+  }
+
+  @case ('deactivate') {
+    <app-modal title="Desactivar usuario" (closed)="closeDialog()">
+      <p>
+        <strong>{{ target()?.name }}</strong> ya no podra iniciar sesion. Sus archivos, comparticiones e historial se
+        conservan, y puedes activarlo de nuevo cuando quieras.
+      </p>
+      @if (formError()) {
+        <p class="alert-error" role="alert">{{ formError() }}</p>
+      }
+      <div class="modal-actions">
+        <button class="btn" type="button" (click)="closeDialog()">Cancelar</button>
+        <button class="btn btn-danger" type="button" [disabled]="busy()" (click)="confirmDeactivate()">Desactivar</button>
+      </div>
+    </app-modal>
+  }
+}

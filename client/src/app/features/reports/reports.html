@@ -1,0 +1,162 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Reportes</h1>
+      <p class="muted">
+        @if (isAdmin()) {
+          Como administrador ves la informacion de todo el sistema y puedes consultar a cualquier usuario.
+        } @else {
+          Estos reportes muestran solo tu informacion.
+        }
+      </p>
+    </div>
+  </header>
+
+  @if (catalogError()) {
+    <p class="alert-error" role="alert">{{ catalogError() }}</p>
+  }
+  @if (loadingCatalog()) {
+    <p class="muted">Cargando reportes...</p>
+  }
+
+  <div class="layout">
+    <nav class="menu card" aria-label="Lista de reportes">
+      @for (g of groups(); track g.name) {
+        <h2 class="group">{{ g.name }}</h2>
+        @for (item of g.items; track item.key) {
+          <button type="button" class="item" [class.active]="selected()?.key === item.key" (click)="select(item)">
+            {{ item.title }}
+          </button>
+        }
+      }
+    </nav>
+
+    <div class="panel card">
+      @if (selected(); as item) {
+        <div class="panel-head">
+          <h2>{{ item.title }}</h2>
+        </div>
+
+        <form class="filters" (ngSubmit)="run()">
+          @for (f of fields(); track f.name) {
+            <div class="filter" [class.check]="f.kind === 'checkbox'">
+              @if (f.kind === 'checkbox') {
+                <label>
+                  <input
+                    type="checkbox"
+                    [name]="f.name"
+                    [ngModel]="values()[f.name] === 'true'"
+                    (ngModelChange)="setValue(f.name, $event ? 'true' : '')"
+                  />
+                  {{ f.label }}
+                </label>
+              } @else {
+                <span>{{ f.label }}</span>
+                @switch (f.kind) {
+                  @case ('date') {
+                    <input
+                      class="input"
+                      type="date"
+                      [name]="f.name"
+                      [attr.aria-label]="f.label"
+                      [ngModel]="valueOf(f.name)"
+                      (ngModelChange)="setValue(f.name, $event)"
+                    />
+                  }
+                  @case ('number') {
+                    <input
+                      class="input"
+                      type="number"
+                      min="1"
+                      [name]="f.name"
+                      [attr.aria-label]="f.label"
+                      [placeholder]="f.placeholder"
+                      [ngModel]="valueOf(f.name)"
+                      (ngModelChange)="setValue(f.name, $event)"
+                    />
+                  }
+                  @default {
+                    <select
+                      class="input"
+                      [name]="f.name"
+                      [attr.aria-label]="f.label"
+                      [ngModel]="valueOf(f.name)"
+                      (ngModelChange)="setValue(f.name, $event)"
+                    >
+                      @for (o of f.options; track o.value) {
+                        <option [value]="o.value">{{ o.label }}</option>
+                      }
+                    </select>
+                  }
+                }
+              }
+            </div>
+          }
+          <div class="filter actions">
+            <button class="btn btn-primary" type="submit" [disabled]="running()">
+              {{ running() ? 'Generando...' : 'Generar reporte' }}
+            </button>
+          </div>
+        </form>
+
+        @if (fields().some(f => f.kind === 'date')) {
+          <p class="muted note">Las fechas se toman en hora de Guatemala; el dia final se incluye completo.</p>
+        }
+
+        @if (error()) {
+          <p class="alert-error" role="alert">{{ error() }}</p>
+        }
+
+        @if (hasResult()) {
+          <div class="result-head">
+            <p class="muted">{{ summary() }}</p>
+            @if (rows().length > 0) {
+              <button class="btn btn-sm" type="button" (click)="exportCsv()">
+                <app-icon name="download" [size]="15" /> Descargar CSV
+              </button>
+            }
+          </div>
+
+          @if (rows().length > 0 && def(); as d) {
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    @for (c of d.columns; track c.header) {
+                      <th [class.right]="c.align === 'right'">{{ c.header }}</th>
+                    }
+                    @if (d.bar; as b) {
+                      <th class="bar-col">{{ b.header }}</th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of rows(); track $index) {
+                    <tr>
+                      @for (c of d.columns; track c.header) {
+                        <td [class.right]="c.align === 'right'">{{ c.value(row) }}</td>
+                      }
+                      @if (d.bar) {
+                        <td class="bar-col">
+                          <div class="bar"><span [style.width.%]="barPercent(row)"></span></div>
+                        </td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <p class="muted empty-note">No hay datos para mostrar con estos filtros.</p>
+          }
+        }
+      } @else if (!loadingCatalog()) {
+        <div class="placeholder">
+          <app-icon name="chart" [size]="40" />
+          <h2>Elige un reporte</h2>
+          <p class="muted">Selecciona uno de la lista para ver sus datos.</p>
+        </div>
+      }
+    </div>
+  </div>
+</section>
